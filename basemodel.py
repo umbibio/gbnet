@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from multiprocessing import Pool, Manager
 from gbnet.chain import Chain
+from gbnet.aux import Reporter
 
 class BaseModel(object):
 
@@ -17,6 +18,7 @@ class BaseModel(object):
         
         self.vars = {}
         self._trace_keys = None
+        self.rp = Reporter()
 
 
     @property
@@ -179,11 +181,11 @@ class BaseModel(object):
                     for count in sampled:
                         total_sampled += count
                     progress = total_sampled / target_total
-                    print("\rProgress {: 7.2%}".format(progress), end="")
+                    self.rp.report(f"Progress {progress: 7.2%}", schar='\r', lchar='', showlast=False)
                     if progress == 1:
                         break
                     timer -= 1
-                print("\rProgress {: 7.2%}".format(progress))
+                self.rp.report(f"Progress {progress: 7.2%}", schar='\r')
                 
                 if timer <= 0:
                     raise TimeoutError
