@@ -170,25 +170,35 @@ class Reporter(object):
         self.ltime = self.ctime
         self.process = psutil.Process(os.getpid())
 
-    def report(self, string='', schar='', lchar='\n', showram=True):
+    def reset(self):
+        self.ctime = time.time()
+        self.stime = self.ctime
+
+    def report(self, string='', schar='', lchar='\n', showram=True, showlast=True):
         self.ctime = time.time()
         total_dt = timedelta(seconds=round(self.ctime - self.stime))
         last_dt = timedelta(seconds=round(self.ctime - self.ltime))
-        out = f'{schar}'
+        out = f'{schar}{string}'
+
         if string:
-            out += f"Last: {last_dt}, elapsed: {total_dt}"
-        else:
-            out += f"Elapsed: {total_dt}"
+            out += ' -- '
+
+        if showlast:
+            out += f"Last: {last_dt}, "
+
+        out += f"Elapsed: {total_dt}"
             
         if showram:
-            usage = self.process.memory_info().rss-self.process.memory_info().shared
+            usage = 0
+            usage += self.process.memory_info().rss-self.process.memory_info().shared
+            for child in self.process.children():
+                usage += child.memory_info().rss-child.memory_info().shared
             usage = usage/1073741824
-            out += f", mem usage: {usage:0.02f}GB"
+            out += f", Mem usage: {usage:0.02f}GB"
         
-        if string:
-            out += f' -- {string}'
         print(out, end=lchar)
-        self.ltime = self.ctime
+        if showlast:
+            self.ltime = self.ctime
 
 
 def mutate_data(Y, factor):
