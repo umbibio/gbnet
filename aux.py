@@ -43,9 +43,18 @@ def genData(NX=3, num_active_tfs=2, NY=50, AvgNTF=0.5):
                 else:
                     Y[trg] += edges[edge]*Xgt[src]
 
+    a = 0.02
+    b = 0.005
+
     # get only the signs for gene activation states
     for trg in Y.keys():
-        Y[trg] = np.sign(Y[trg])
+        sgn = np.sign(Y[trg])
+        if sgn == -1:
+            Y[trg] = np.random.choice([-1, 0, 1], p=[1.-a-b, a, b])
+        if sgn == 0:
+            Y[trg] = np.random.choice([-1, 0, 1], p=[a, 1.-a-a, a])
+        if sgn == 1:
+            Y[trg] = np.random.choice([-1, 0, 1], p=[b, a, 1.-a-b])
         
     # this is the possible associations data
     rels = pd.DataFrame(list(edges.keys()), columns=['srcuid', 'trguid'])
