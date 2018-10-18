@@ -7,7 +7,7 @@ from gbnet.nodes import Beta, Multinomial
 class ORNOR_YLikelihood(Multinomial):
     __slots__ = []
 
-    def get_loglikelihood(self):
+    def get_model_likelihood(self):
         if self.value[0]:
             pr0 = 1.
             for x, t, s in self.in_edges:
@@ -33,11 +33,21 @@ class ORNOR_YLikelihood(Multinomial):
                 if not s.value[1]:
                     pr1 *= 1. - t.value * x.value[1]
             likelihood = pr1
+        
+        return likelihood
 
-        if likelihood > 0:
-            return np.log(likelihood)
-        else:
-            return -np.inf
+
+    def get_loglikelihood(self):
+        curr_val = self.value
+        
+        likelihood = np.zeros_like(curr_val, dtype=np.float64)
+        for i, val in enumerate(self.possible_values):
+            self.value = val
+            likelihood[i] = self.get_model_likelihood() * self.prior_prob[i]
+
+        self.value = curr_val
+
+        return np.log(likelihood.sum())
 
 
     def sample(self):
@@ -56,8 +66,8 @@ class ORNORModel(BaseModel):
 
         # define a conditional probability table for the observed values
         # H is hidden true value of gene, Z is observed value in DEG
-        a = 0.05
-        b = 0.02
+        a = 0.02
+        b = 0.005
 
         PHZTable = np.empty(shape=(3,3), dtype=np.float64)
         PHZTable[0] = [1. - a - b,        a,          b]

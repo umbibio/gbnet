@@ -3,7 +3,7 @@ import scipy.stats as st
 
 
 class Node(object):
-    __slots__ = ['id', 'name', 'uid', 'idx', 'parents', 'children', 'blanket', 'in_edges']
+    __slots__ = ['id', 'name', 'uid', 'parents', 'children', 'blanket', 'in_edges']
 
     def __init__(self, name, uid):
         self.id = f"{name}__{uid}"
@@ -102,12 +102,14 @@ class DiscreteRandomVariable(RandomVariable):
 
 
 class Multinomial(DiscreteRandomVariable):
-    __slots__ = ['possible_values']
+    __slots__ = ['possible_values', 'prior_prob', 'prior_logprob']
 
     def __init__(self, *args, **kwargs):
         args, p = args[:-1], args[-1]
         self.dist = st.multinomial
         self.params = [1, p]
+        self.prior_prob = p
+        self.prior_logprob = np.log(p)
         self.possible_values = np.eye(len(p), dtype=np.int)
         DiscreteRandomVariable.__init__(self, *args, **kwargs)
 
