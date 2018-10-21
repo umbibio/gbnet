@@ -19,6 +19,11 @@ class BaseModel(object):
         self.rp = Reporter()
 
 
+    def burn_stats(self):
+        for chain in self.chains:
+            chain.reset_stats()
+
+
     def get_trace_stats(self, combine=False):
         nchains = len(self.chains)
         dfs = []
@@ -27,21 +32,26 @@ class BaseModel(object):
             df.index.name = 'name'
             dfs.append(df)
 
+        num_samples = dfs[0]['N'][0]
+
         if combine:
             stats = dfs[0]
             for df in dfs[1:]:
                 stats += df
 
-            stats = stats.assign(mean=stats.apply(lambda r: r.sum1/r.N, axis=1))
-            stats = stats.assign(var=stats.apply(lambda r: r.sum2/r.N - r['mean']**2, axis=1))
-            stats = stats.assign(std=stats.apply(lambda r: np.sqrt(r['var']), axis=1))
+            if num_samples > 0:
+
+                stats = stats.assign(mean=stats.apply(lambda r: r.sum1/r.N, axis=1))
+                stats = stats.assign(var=stats.apply(lambda r: r.sum2/r.N - r['mean']**2, axis=1))
+                stats = stats.assign(std=stats.apply(lambda r: np.sqrt(r['var']), axis=1))
 
         else:
             stats = []
             for df in dfs:
-                df = df.assign(mean=df.apply(lambda r: r.sum1/r.N, axis=1))
-                df = df.assign(var=df.apply(lambda r: r.sum2/r.N - r['mean']**2, axis=1))
-                df = df.assign(std=df.apply(lambda r: np.sqrt(r['var']), axis=1))
+                if num_samples > 0:
+                    df = df.assign(mean=df.apply(lambda r: r.sum1/r.N, axis=1))
+                    df = df.assign(var=df.apply(lambda r: r.sum2/r.N - r['mean']**2, axis=1))
+                    df = df.assign(std=df.apply(lambda r: np.sqrt(r['var']), axis=1))
                 stats.append(df)
 
         return stats
@@ -64,9 +74,8 @@ class BaseModel(object):
         return self._trace_keys
 
 
-    def init_chains(self):
-        chains = 2
-        for ch in range(chains):
+    def init_chains(self, nchains=2):
+        for ch in range(nchains):
             self.chains.append(Chain(self, ch))
 
 
@@ -91,7 +100,7 @@ class BaseModel(object):
         return np.sqrt(Vhat / W)
 
 
-    def run_convergence_test(self):
+    def get_gelman_rubin(self):
 
         nchains = len(self.chains)
         
@@ -102,6 +111,9 @@ class BaseModel(object):
         trace_stats = self.get_trace_stats()
 
         num_samples = trace_stats[0]['N'][0]
+
+        if num_samples == 0:
+            return []
 
         # Calculate between-chain variance
         B = num_samples * pd.DataFrame([df['mean'] for df in trace_stats]).var(ddof=1)
@@ -116,21 +128,26 @@ class BaseModel(object):
 
         gelman_rubin = var_table.apply(lambda r: np.sqrt(r.Vhat/r.W) if r.W > 0 else 1., axis=1)
         self.gelman_rubin = gelman_rubin
+        self.max_gr = gelman_rubin.max()
+
+        return gelman_rubin
 
 
     def converged(self):
 
-        if len(self.gelman_rubin) == 0:
+        gelman_rubin = self.get_gelman_rubin()
+
+        if len(gelman_rubin) == 0:
             return False
 
-        self.max_gr = self.gelman_rubin.max()
+        max_gr = gelman_rubin.max()
         
-        if self.max_gr < 1.1:
+        if max_gr < 1.1:
             print("\nChains have converged")
             return True
         else:
             print(f"\nFailed to converge. "
-                  f"Gelman-Rubin statistics was {self.max_gr: 7.4} for some parameter")
+                  f"Gelman-Rubin statistics was {max_gr: 7.4} for some parameter")
             return False
 
 
