@@ -85,7 +85,7 @@ class ORNORModel(BaseModel):
         Xnodes, Tnodes = {}, {}
         for src in X_list:
             Xnodes[src] = Multinomial('X', src, [0.99, 0.01])
-            Tnodes[src] = Beta('T', src, 5, 5)
+            Tnodes[src] = Beta('T', src, 2, 2)
 
         Snodes = {}
         for edg in rels.index:
