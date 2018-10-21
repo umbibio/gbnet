@@ -12,7 +12,6 @@ class BaseModel(object):
         self.chains = []
         
         self.gelman_rubin = {}
-        self.max_gr = 0
         
         self.vars = {}
         self._trace_keys = None
@@ -79,27 +78,6 @@ class BaseModel(object):
             self.chains.append(Chain(self, ch))
 
 
-    def rscore(self, x, num_samples):
-        """Implementation taken from
-        https://github.com/pymc-devs/pymc3/blob/master/pymc3/diagnostics.py
-        
-        Further reference:
-        https://blog.stata.com/2016/05/26/gelman-rubin-convergence-diagnostic-using-multiple-chains/
-        DOI: 10.1080/10618600.1998.10474787
-        https://www.jstor.org/stable/2246093
-        """
-        # Calculate between-chain variance
-        B = num_samples * np.var(np.mean(x, axis=1), axis=0, ddof=1)
-
-        # Calculate within-chain variance
-        W = np.mean(np.var(x, axis=1, ddof=1), axis=0)
-
-        # Estimate of marginal posterior variance
-        Vhat = W * (num_samples - 1) / num_samples + B / num_samples
-
-        return np.sqrt(Vhat / W)
-
-
     def get_gelman_rubin(self):
 
         nchains = len(self.chains)
@@ -128,7 +106,6 @@ class BaseModel(object):
 
         gelman_rubin = var_table.apply(lambda r: np.sqrt(r.Vhat/r.W) if r.W > 0 else 1., axis=1)
         self.gelman_rubin = gelman_rubin
-        self.max_gr = gelman_rubin.max()
 
         return gelman_rubin
 

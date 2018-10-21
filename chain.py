@@ -7,7 +7,6 @@ class Chain(object):
         self.vars = model.vars
         self.id = chain_id
         
-        self.stats_N = 0
         self.stats = {}
         self.trace_keys = model.trace_keys
 
@@ -15,7 +14,6 @@ class Chain(object):
 
 
     def reset_stats(self):
-        self.stats_N = 0
         for key in self.trace_keys:
             self.stats[key] = { 'sum1': 0, 'sum2': 0, 'N': 0 }
 
