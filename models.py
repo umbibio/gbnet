@@ -56,7 +56,7 @@ class ORNOR_YLikelihood(Multinomial):
 
 class ORNORModel(BaseModel):
 
-    def __init__(self, rels, DEG):
+    def __init__(self, rels, DEG, nchains=2):
         BaseModel.__init__(self)
 
         self.rels = rels
@@ -107,7 +107,7 @@ class ORNORModel(BaseModel):
         self.vars['X'] = Xnodes
         self.vars['T'] = Tnodes
         self.vars['S'] = Snodes
-        self.init_chains()
+        self.init_chains(nchains)
 
 
     def result(self, Xgt=None):
