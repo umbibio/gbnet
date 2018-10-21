@@ -9,10 +9,8 @@ class BaseModel(object):
 
     def __init__(self):
         
-        self.trace = []
         self.chains = []
         
-        self.burn = None
         self.gelman_rubin = {}
         self.max_gr = 0
         
@@ -21,14 +19,32 @@ class BaseModel(object):
         self.rp = Reporter()
 
 
-    @property
-    def trace_df(self):
-        trace_length = len(next(iter(self.trace[0].values())))
-        if self.burn < 1:
-            burn = int(trace_length * self.burn)
+    def get_trace_stats(self, combine=False):
+        nchains = len(self.chains)
+        dfs = []
+        for i in range(nchains):
+            df = pd.DataFrame(self.chains[i].stats).transpose()
+            df.index.name = 'name'
+            dfs.append(df)
+
+        if combine:
+            stats = dfs[0]
+            for df in dfs[1:]:
+                stats += df
+
+            stats = stats.assign(mean=stats.apply(lambda r: r.sum1/r.N, axis=1))
+            stats = stats.assign(var=stats.apply(lambda r: r.sum2/r.N - r['mean']**2, axis=1))
+            stats = stats.assign(std=stats.apply(lambda r: np.sqrt(r['var']), axis=1))
+
         else:
-            burn = self.burn
-        return [pd.DataFrame(tr).iloc[burn:] for tr in self.trace]
+            stats = []
+            for df in dfs:
+                df = df.assign(mean=df.apply(lambda r: r.sum1/r.N, axis=1))
+                df = df.assign(var=df.apply(lambda r: r.sum2/r.N - r['mean']**2, axis=1))
+                df = df.assign(std=df.apply(lambda r: np.sqrt(r['var']), axis=1))
+                stats.append(df)
+
+        return stats
 
 
     @property
@@ -52,9 +68,6 @@ class BaseModel(object):
         chains = 2
         for ch in range(chains):
             self.chains.append(Chain(self, ch))
-            self.trace.append({})
-            for key in self.trace_keys:
-                self.trace[ch][key] = []
 
 
     def rscore(self, x, num_samples):
@@ -78,47 +91,28 @@ class BaseModel(object):
         return np.sqrt(Vhat / W)
 
 
-    def get_trace(self, varname, chain=None, combine=False):
-        trace_length = self.trace[0][varname].shape[0]
-        if self.burn < 1:
-            burn = int(trace_length * self.burn)
-        else:
-            burn = self.burn
-        trace = []
-        for t in self.trace:
-            trace.append(t[varname][burn:, :])
-        trace = np.array(trace)
-        
-        if combine:
-            nvars = trace.shape[2]
-            return trace.reshape((-1, nvars))
-        
-        if chain is not None:
-            return trace[chain]
-        
-        return trace
-
-
     def run_convergence_test(self):
+
+        nchains = len(self.chains)
         
-        if len(self.trace) < 2:
+        if nchains < 2:
             print('Need at least two chains for the convergence test')
             return
         
-        trace_df = self.trace_df
+        trace_stats = self.get_trace_stats()
 
-        num_samples = len(trace_df[0])
+        num_samples = trace_stats[0]['N'][0]
 
         # Calculate between-chain variance
-        B = num_samples * pd.DataFrame([tr.mean() for tr in trace_df]).var(ddof=1)
+        B = num_samples * pd.DataFrame([df['mean'] for df in trace_stats]).var(ddof=1)
 
         # Calculate within-chain variance
-        W = pd.DataFrame([tr.var(ddof=1) for tr in trace_df]).mean()
+        W = pd.DataFrame([df['var'] for df in trace_stats]).mean()
 
         # Estimate of marginal posterior variance
         Vhat = W * (num_samples - 1) / num_samples + B / num_samples
 
-        var_table = pd.DataFrame({'B':B, 'W':W, 'Vhat':Vhat})
+        var_table = pd.DataFrame({'W':W, 'Vhat':Vhat})
 
         gelman_rubin = var_table.apply(lambda r: np.sqrt(r.Vhat/r.W) if r.W > 0 else 1., axis=1)
         self.gelman_rubin = gelman_rubin
@@ -140,19 +134,7 @@ class BaseModel(object):
             return False
 
 
-    def get_result(self, varname):
-        trace = self.get_trace(varname, combine=True)
-        mean = trace.mean(axis=0)
-        std = trace.std(axis=0)
-        return pd.DataFrame({'mean': mean, 'std': std})
-
-
-    def sample(self, N=200, burn=None, thin=1, njobs=2):
-        if burn is None:
-            if self.burn is None:
-                self.burn = 100
-        else:
-            self.burn = burn
+    def sample(self, N=200, thin=1, njobs=2):
             
         if njobs > 1:
             
@@ -205,9 +187,3 @@ class BaseModel(object):
         else:
             for chain in self.chains:
                 chain.sample(N, thin=thin)
-        
-        for chain_id, trace in enumerate(self.trace):
-            for key in self.trace_keys:
-                trace[key] += self.chains[chain_id].chain[key]
-
-        self.run_convergence_test()

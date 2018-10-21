@@ -111,12 +111,8 @@ class ORNORModel(BaseModel):
 
 
     def result(self, Xgt=None):
-        result = pd.concat(self.trace_df)
-        result = {
-            'mean': result.mean(),
-            'std': result.std(),
-        }
-        result = pd.DataFrame(result)
+
+        result = self.get_trace_stats(combine=True).drop(columns=['N', 'sum1', 'sum2', 'var'])
 
         rels = self.rels
         src_uids = rels.srcuid.unique()
