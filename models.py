@@ -58,7 +58,8 @@ class ORNORModel(BaseModel):
 
     __slots__ = ['rels']
 
-    def __init__(self, rels, DEG):
+
+    def __init__(self, rels, DEG, nchains=2):
         BaseModel.__init__(self)
 
         self.rels = rels
@@ -87,7 +88,7 @@ class ORNORModel(BaseModel):
         Xnodes, Tnodes = {}, {}
         for src in X_list:
             Xnodes[src] = Multinomial('X', src, [0.99, 0.01])
-            Tnodes[src] = Beta('T', src, 5, 5)
+            Tnodes[src] = Beta('T', src, 2, 2)
 
         Snodes = {}
         for edg in rels.index:
@@ -109,16 +110,12 @@ class ORNORModel(BaseModel):
         self.vars['X'] = Xnodes
         self.vars['T'] = Tnodes
         self.vars['S'] = Snodes
-        self.init_chains()
+        self.init_chains(nchains)
 
 
     def result(self, Xgt=None):
-        result = pd.concat(self.trace_df)
-        result = {
-            'mean': result.mean(),
-            'std': result.std(),
-        }
-        result = pd.DataFrame(result)
+
+        result = self.get_trace_stats(combine=True).drop(columns=['N', 'sum1', 'sum2', 'var'])
 
         rels = self.rels
         src_uids = rels.srcuid.unique()
