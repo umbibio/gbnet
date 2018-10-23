@@ -7,6 +7,17 @@ from gbnet.aux import Reporter
 
 class BaseModel(object):
 
+    __slots__ = [
+        'trace',
+        'chains',
+        'burn',
+        'gelman_rubin',
+        'max_gr',
+        'vars',
+        '_trace_keys',
+        'rp',
+    ]
+
     def __init__(self):
         
         self.trace = []

@@ -56,6 +56,8 @@ class ORNOR_YLikelihood(Multinomial):
 
 class ORNORModel(BaseModel):
 
+    __slots__ = ['rels']
+
     def __init__(self, rels, DEG):
         BaseModel.__init__(self)
 
@@ -148,12 +150,8 @@ class ORNORModel(BaseModel):
         except KeyError:
             pass
 
-        self.Xres = Xres
-        self.Tres = Tres
-        self.Sres = Sres
-
         return {
-            'X': Xres[Xres.pred==1],
+            'X': Xres,
             'T': Tres,
-            'S': Sres[Sres.srcuid.isin(Xres[Xres.pred==1].srcuid)],
+            'S': Sres,
         }
