@@ -6,7 +6,7 @@ class Chain(object):
     __slots__ = [
         'vars',
         'id',
-        'chain',
+        'stats',
         'trace_keys',
     ]
 
