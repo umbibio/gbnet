@@ -29,9 +29,9 @@ class BaseModel(object):
         self.rp = Reporter()
 
 
-    def burn_stats(self):
+    def burn_stats(self, burn_fraction=1.0):
         for chain in self.chains:
-            chain.reset_stats()
+            chain.burn_stats(burn_fraction=burn_fraction)
 
 
     def get_trace_stats(self, combine=False):

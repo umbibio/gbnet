@@ -18,12 +18,15 @@ class Chain(object):
         self.stats = {}
         self.trace_keys = model.trace_keys
 
-        self.reset_stats()
-
-
-    def reset_stats(self):
         for key in self.trace_keys:
             self.stats[key] = { 'sum1': 0, 'sum2': 0, 'N': 0 }
+
+
+    def burn_stats(self, burn_fraction=1.0):
+        keep_fraction = 1. - burn_fraction
+        for key in self.trace_keys:
+            for stat_key, stat_val in self.stats[key].items():
+                self.stats[key][stat_key] = stat_val * keep_fraction
 
 
     def sample(self, N, run_sampled_count=None, thin=1):
