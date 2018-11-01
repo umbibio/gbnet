@@ -89,19 +89,7 @@ class ContinuousRandomVariable(RandomVariable):
         #self.sample_from_prior()
 
 
-class DiscreteRandomVariable(RandomVariable):
-    __slots__ = []
-
-    def get_loglikelihood(self):
-        loglik = 0.
-        for node in self.children:
-            loglik += node.get_loglikelihood()
-        loglik += self.dist.logpmf(self.value, *self.params) # pylint: disable=E1101
-        
-        return loglik
-
-
-class Multinomial(DiscreteRandomVariable):
+class Multinomial(RandomVariable):
     __slots__ = ['possible_values', 'prior_prob', 'prior_logprob']
 
     def __init__(self, *args, **kwargs):
@@ -111,7 +99,7 @@ class Multinomial(DiscreteRandomVariable):
         self.prior_prob = p
         self.prior_logprob = np.log(p)
         self.possible_values = np.eye(len(p), dtype=np.int)
-        DiscreteRandomVariable.__init__(self, *args, **kwargs)
+        RandomVariable.__init__(self, *args, **kwargs)
 
 
     def reset(self):
@@ -140,10 +128,18 @@ class Multinomial(DiscreteRandomVariable):
 
         return p
 
+    def get_loglikelihood(self):
+        loglik = 0.
+        for node in self.children:
+            loglik += node.get_loglikelihood()
+        #loglik += self.dist.logpmf(self.value, *self.params)
+        loglik += self.prior_logprob[np.argmax(self.value)] # rely on N = 1
+        
+        return loglik
 
     def sample(self):
         p = self.get_outcome_probs()
-        self.value = self.dist.rvs(1, p)
+        self.value = np.random.multinomial(1, p)
         self.total_sampled += 1
 
 
