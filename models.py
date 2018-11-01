@@ -5,7 +5,10 @@ from gbnet.nodes import Beta, Multinomial
 
 
 class ORNOR_YLikelihood(Multinomial):
+
+
     __slots__ = []
+
 
     def get_model_likelihood(self):
         if self.value[0]:
