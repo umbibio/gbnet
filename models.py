@@ -56,6 +56,7 @@ class ORNOR_YLikelihood(Multinomial):
 
 class ORNORModel(BaseModel):
 
+
     __slots__ = ['rels']
 
 

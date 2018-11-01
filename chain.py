@@ -1,14 +1,11 @@
 import numpy as np
-import scipy.stats as st
+
 
 class Chain(object):
 
-    __slots__ = [
-        'vars',
-        'id',
-        'stats',
-        'trace_keys',
-    ]
+
+    __slots__ = [ 'vars', 'id', 'stats', 'trace_keys', ]
+
 
     def __init__(self, model, chain_id):
         

@@ -5,7 +5,9 @@ from multiprocessing import Pool, Manager
 from gbnet.chain import Chain
 from gbnet.aux import Reporter
 
+
 class BaseModel(object):
+
 
     __slots__ = [
         'trace',
@@ -17,6 +19,7 @@ class BaseModel(object):
         '_trace_keys',
         'rp',
     ]
+
 
     def __init__(self):
         
