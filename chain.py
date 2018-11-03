@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 
 
 class Chain(object):
@@ -9,7 +10,7 @@ class Chain(object):
 
     def __init__(self, model, chain_id):
         
-        self.vars = model.vars
+        self.vars = copy.deepcopy(model.vars)
         self.id = chain_id
         
         self.stats = {}

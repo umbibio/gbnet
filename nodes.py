@@ -10,8 +10,11 @@ class RandomVariableNode(object):
         'in_edges', 'value', 'total_sampled', 'dist', 'params']
 
     
-    def __init__(self, name, uid, **kwargs):
-        self.id = f"{name}__{uid}"
+    def __init__(self, name, uid=None, **kwargs):
+        if uid is not None:
+            self.id = f"{name}__{uid}"
+        else:
+            self.id = name
         self.name = name
         self.uid = uid
 
@@ -97,21 +100,35 @@ class Multinomial(RandomVariableNode):
 class Beta(RandomVariableNode):
 
 
-    __slots__ = ['l_clip', 'r_clip']
+    __slots__ = ['l_clip', 'r_clip', 'scale']
 
 
     def __init__(self, *args, **kwargs):
         args, a, b = args[:-2], args[-2], args[-1]
         self.dist = st.beta
         self.params = [a, b]
-        self.l_clip = 0.01
-        self.r_clip = 0.99
+
+        try:
+            self.l_clip = kwargs['l_clip']
+        except KeyError:
+            self.l_clip = 0.0
+
+        try:
+            self.r_clip = kwargs['r_clip']
+        except KeyError:
+            self.r_clip = 1.0
+
+        try:
+            self.scale = kwargs['scale']
+        except KeyError:
+            self.scale = 0.2
+
         RandomVariableNode.__init__(self, *args, **kwargs)
 
 
     def proposal_norm(self):
         prev = self.value
-        scale = 0.2
+        scale = self.scale
         
         lft, rgt = self.l_clip, self.r_clip
         a, b = (lft - prev) / scale, (rgt - prev) / scale
