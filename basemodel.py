@@ -83,6 +83,7 @@ class BaseModel(object):
     def init_chains(self, nchains=2):
         for ch in range(nchains):
             self.chains.append(Chain(self, ch))
+        self.vars = None
 
 
     def get_gelman_rubin(self):
