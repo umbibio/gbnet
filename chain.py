@@ -10,7 +10,7 @@ class Chain(object):
 
     def __init__(self, model, chain_id):
         
-        self.vars = copy.deepcopy(model.vars)
+        self.vars = copy.copy(model.vars)
         self.id = chain_id
         
         self.stats = {}
