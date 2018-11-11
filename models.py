@@ -92,7 +92,7 @@ class Noise(RandomVariableNode):
         self.value = np.array([self.a.value, self.b.value])
         for Ynod in self.children:
             y_prob = self.table[:, np.argwhere(Ynod.value)[0, 0]]
-            Ynod.prior_prob = y_prob
+            Ynod.prob = y_prob
 
 
     def rvs(self):
