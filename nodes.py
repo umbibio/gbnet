@@ -41,15 +41,15 @@ class RandomVariableNode(object):
 class Multinomial(RandomVariableNode):
     
     
-    __slots__ = ['possible_values', 'prior_prob', 'prior_logprob']
+    __slots__ = ['possible_values', 'prob', 'logprob']
 
     
     def __init__(self, *args, **kwargs):
         args, p = args[:-1], args[-1]
         self.dist = st.multinomial
         self.params = [1, p]
-        self.prior_prob = p
-        self.prior_logprob = np.log(p)
+        self.prob = p
+        self.logprob = np.log(p)
         self.possible_values = np.eye(len(p), dtype=np.int)
         RandomVariableNode.__init__(self, *args, **kwargs)
 
@@ -86,7 +86,7 @@ class Multinomial(RandomVariableNode):
         for node in self.children:
             loglik += node.get_loglikelihood()
         #loglik += self.dist.logpmf(self.value, *self.params)
-        loglik += self.prior_logprob[np.argmax(self.value)] # rely on N = 1
+        loglik += self.logprob[np.argmax(self.value)] # rely on N = 1
         
         return loglik
 
