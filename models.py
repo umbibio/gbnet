@@ -46,7 +46,7 @@ class ORNOR_YLikelihood(Multinomial):
         likelihood = np.zeros_like(curr_val, dtype=np.float64)
         for i, val in enumerate(self.possible_values):
             self.value = val
-            likelihood[i] = self.get_model_likelihood() * self.prior_prob[i]
+            likelihood[i] = self.get_model_likelihood() * self.prob[i]
 
         self.value = curr_val
 
