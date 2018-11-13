@@ -169,3 +169,97 @@ class Beta(RandomVariableNode):
         self.metropolis_hastings()
         #self.sample_from_prior()
 
+
+class ORNOR_YLikelihood(Multinomial):
+
+
+    __slots__ = []
+
+
+    def get_model_likelihood(self):
+        if self.value[0]:
+            pr0 = 1.
+            for x, t, s in self.in_edges:
+                if s.value[0]:
+                    pr0 *= 1. - t.value * x.value[1]
+            pr0 = (1. - pr0)
+            likelihood = pr0
+
+        elif self.value[2]:
+            pr0 = 1.
+            pr2 = 1.
+            for x, t, s in self.in_edges:
+                if s.value[2]:
+                    pr2 *= 1. - t.value * x.value[1]
+                elif s.value[0]:
+                    pr0 *= 1. - t.value * x.value[1]
+            pr2 = (pr0 - pr2*pr0)
+            likelihood = pr2
+
+        else:
+            pr1 = 1.
+            for x, t, s in self.in_edges:
+                if not s.value[1]:
+                    pr1 *= 1. - t.value * x.value[1]
+            likelihood = pr1
+        
+        return likelihood
+
+
+    def get_loglikelihood(self):
+        curr_val = self.value
+        
+        likelihood = np.zeros_like(curr_val, dtype=np.float64)
+        for i, val in enumerate(self.possible_values):
+            self.value = val
+            likelihood[i] = self.get_model_likelihood() * self.prob[i]
+
+        self.value = curr_val
+
+        return np.log(likelihood.sum())
+
+
+    def sample(self):
+        pass
+        #self.value = self.dist.rvs(*self.params)
+
+
+class Noise(RandomVariableNode):
+
+
+    __slots__ = ['table', 'a', 'b']
+
+
+    def __init__(self, *args, a=0.050, b=0.001, **kwargs):
+        self.a = Beta('a', 0, 5, 100, value=a, r_clip=0.5, step=0.02)
+        self.b = Beta('b', 0, 1, 100, value=b, r_clip=0.5, step=0.02)
+        self.table = np.eye(3, dtype=float)
+        self.update_table()
+
+        RandomVariableNode.__init__(self, *args, **kwargs)
+
+        self.parents.append(self.a)
+        self.parents.append(self.b)
+
+
+    def update_table(self):
+        a = self.a.value
+        b = self.b.value
+        self.table[0] = [1. - a - b,          a,          b]
+        self.table[1] = [         a, 1. - 2 * a,          a]
+        self.table[2] = [         b,          a, 1. - a - b]
+
+
+    def sample(self):
+        self.a.sample()
+        self.update_table()
+        self.b.sample()
+        self.update_table()
+        self.value = np.array([self.a.value, self.b.value])
+        for Ynod in self.children:
+            y_prob = self.table[:, np.argwhere(Ynod.value)[0, 0]]
+            Ynod.prob = y_prob
+
+
+    def rvs(self):
+        return np.array([self.a.value, self.b.value])

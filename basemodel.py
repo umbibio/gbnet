@@ -2,7 +2,7 @@ import signal, time
 import numpy as np
 import pandas as pd
 from multiprocessing import Pool, Manager
-from gbnet.chain import Chain
+from gbnet.cchain import Chain
 from gbnet.aux import Reporter
 
 
