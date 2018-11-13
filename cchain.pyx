@@ -57,28 +57,30 @@ cdef class Chain:
                     print("\rChain {} - Progress {: 7.2%}".format(self.id, i/N), end="")
                 steps_until_updt = updt_interval
 
+            steps_until_thin -= 1
+            update_stats = steps_until_thin < 1
+
             for vardict in self.vars.values():
                 for node in vardict.values():
-                    node.sample()
+                    node.sample(update_stats)
 
-            steps_until_thin -= 1
-            if not steps_until_thin:
+            if update_stats:
                 steps_until_thin = thin
 
-                for vardict in self.vars.values():
-                    for node in vardict.values():
-                        try:
-                            # if node is multinomial, value will be a numpy array
-                            # have to set a list for each element in 'value'
-                            for i, val in enumerate(node.value):
-                                self.stats[f"{node.id}_{i}"]['sum1'] += val
-                                self.stats[f"{node.id}_{i}"]['sum2'] += val**2
-                                self.stats[f"{node.id}_{i}"]['N'] += 1
-                        except TypeError:
-                            # value is no array, it won't be iterable
-                            self.stats[node.id]['sum1'] += node.value
-                            self.stats[node.id]['sum2'] += node.value**2
-                            self.stats[node.id]['N'] += 1
+        for vardict in self.vars.values():
+            for node in vardict.values():
+                try:
+                    # if node is multinomial, value will be a numpy array
+                    # have to set a list for each element in 'value'
+                    for i, val in enumerate(node.value):
+                        self.stats[f"{node.id}_{i}"]['sum1'] = node.valsum1[i]
+                        self.stats[f"{node.id}_{i}"]['sum2'] = node.valsum2[i]
+                        self.stats[f"{node.id}_{i}"]['N'] = node.valN
+                except TypeError:
+                    # value is no array, it won't be iterable
+                    self.stats[node.id]['sum1'] = node.valsum1
+                    self.stats[node.id]['sum2'] = node.valsum2
+                    self.stats[node.id]['N'] = node.valN
 
 
         if not quiet:

@@ -68,11 +68,15 @@ cdef class Multinomial(RandomVariableNode):
     cdef unsigned int *possible_values
     cdef double *prob
     cdef double *logprob
-    cdef size_t noutcomes
+    cdef unsigned int noutcomes
     
     cdef unsigned int *value_buff
     
     cdef double *pr
+
+    cdef double *valsum1
+    cdef double *valsum2
+    cdef public double valN
 
 
     def __init__(self, str name, uid, np.ndarray p,
@@ -81,7 +85,7 @@ cdef class Multinomial(RandomVariableNode):
         if not value.shape[0]:
             value = np.random.multinomial(1, p).astype(np.int32)
 
-        cdef size_t size = p.shape[0]
+        cdef unsigned int size = p.shape[0]
 
         self.noutcomes = size
 
@@ -94,11 +98,18 @@ cdef class Multinomial(RandomVariableNode):
         self.value = <unsigned int *> malloc(size * sizeof(unsigned int))
         self.possible_values = <unsigned int *> malloc(size * size * sizeof(unsigned int))
 
-        cdef int i, j, v
+        self.valsum1 = <double *> malloc(size * sizeof(double))
+        self.valsum2 = <double *> malloc(size * sizeof(double))
+        self.valN = 0.
+
+
+        cdef unsigned int i, j, v
         for i in range(size):
             self.value[i] = value[i]
             self.prob[i] = p[i]
             self.logprob[i] = log(p[i])
+            self.valsum1[i] = 0.
+            self.valsum2[i] = 0.
             for j in range(size):
                 if i == j:
                     v = 1
@@ -118,16 +129,23 @@ cdef class Multinomial(RandomVariableNode):
             self.value_cached = 1
         return self._value
 
+    @property
+    def valsum1(self):
+        return [self.valsum1[i] for i in range(self.noutcomes)]
+    
+    @property
+    def valsum2(self):
+        return [self.valsum2[i] for i in range(self.noutcomes)]
     
     @cython.cdivision(True)
     cdef void get_outcome_probs(self):
 
-        cdef size_t size = self.noutcomes
+        cdef unsigned int size = self.noutcomes
 
         cdef double llik, lik
         cdef double sum_lik = 0
 
-        cdef int i, j
+        cdef unsigned int i, j
         for i in range(size):
             self.value_buff[i] = self.value[i]
 
@@ -153,7 +171,7 @@ cdef class Multinomial(RandomVariableNode):
     cdef double get_loglikelihood(self):
         cdef double loglik = 0.
 
-        cdef RandomVariableNode node
+        cdef ORNOR_YLikelihood node
 
         for node in self.children:
             loglik += node.get_loglikelihood()
@@ -162,23 +180,28 @@ cdef class Multinomial(RandomVariableNode):
         return loglik
 
     
-    def sample(self):
+    def sample(self, update_stats=False):
         self.get_outcome_probs()
         cdef unsigned int N = 1
         gsl_ran_multinomial(r, self.noutcomes, N, self.pr, self.value)
         self.value_cached = 0
+        if update_stats:
+            self.valN += 1.
+            for i in range(self.noutcomes):
+                self.valsum1[i] += <double> self.value[i]
+                self.valsum2[i] += <double> self.value[i] * self.value[i]
 
 
 cdef class ORNOR_YLikelihood(Multinomial):
 
     @property
     def prob(self):
-        cdef int i
+        cdef unsigned int i
         return [self.prob[i] for i in range(self.noutcomes)]
 
     @prob.setter
     def prob(self, np.ndarray[double, ndim=1] value):
-        cdef int i
+        cdef unsigned int i
         for i in range(self.noutcomes):
             self.prob[i] = value[i]
 
@@ -217,11 +240,11 @@ cdef class ORNOR_YLikelihood(Multinomial):
         return likelihood
 
 
-    cpdef double get_loglikelihood(self):
+    cdef public double get_loglikelihood(self):
 
-        cdef size_t size = self.noutcomes
+        cdef unsigned int size = self.noutcomes
 
-        cdef int i, j
+        cdef unsigned int i, j
         for i in range(size):
             self.value_buff[i] = self.value[i]
         
@@ -248,6 +271,10 @@ cdef class Noise(RandomVariableNode):
     cdef public np.ndarray table, value
     cdef public Beta a, b
 
+    cdef double *valsum1
+    cdef double *valsum2
+    cdef public double valN
+
 
     def __init__(self, name, uid, a=0.050, b=0.001):
         self.a = Beta('a', 0, 5, 100, value=a, r_clip=0.5, scale=0.02)
@@ -260,6 +287,14 @@ cdef class Noise(RandomVariableNode):
         self.parents.append(self.a)
         self.parents.append(self.b)
 
+        self.valsum1 = <double *> malloc(2 * sizeof(double))
+        self.valsum2 = <double *> malloc(2 * sizeof(double))
+        self.valN = 0.
+
+        cdef unsigned int i
+        for i in range(2):
+            self.valsum1[i] = 0.
+            self.valsum2[i] = 0.
 
     def update(self):
         a = self.a.value
@@ -272,7 +307,7 @@ cdef class Noise(RandomVariableNode):
         self.value = np.array([self.a.value, self.b.value])
 
 
-    def sample(self):
+    def sample(self, update_stats=False):
         self.a.sample()
         self.update()
         self.b.sample()
@@ -282,6 +317,20 @@ cdef class Noise(RandomVariableNode):
             y_prob = self.table[:, np.argwhere(Ynod.value)[0, 0]]
             Ynod.prob = y_prob
 
+        if update_stats:
+            self.valN += 1.
+            for i in range(2):
+                self.valsum1[i] += <double> self.value[i]
+                self.valsum2[i] += <double> self.value[i] * self.value[i]
+
+    @property
+    def valsum1(self):
+        return [self.valsum1[i] for i in range(2)]
+    
+    @property
+    def valsum2(self):
+        return [self.valsum2[i] for i in range(2)]
+    
 
     def rvs(self):
         return np.array([self.a.value, self.b.value])
@@ -294,6 +343,8 @@ cdef class Beta(RandomVariableNode):
     cdef list params
     cdef public double value
     cdef double a, b
+
+    cdef public double valsum1, valsum2, valN
 
 
     def __init__(self, name, uid, a, b, value=None, l_clip=0.0, r_clip=1.0, scale=0.02):
@@ -311,6 +362,10 @@ cdef class Beta(RandomVariableNode):
         self.l_clip = l_clip
         self.r_clip = r_clip
         self.scale = scale
+
+        self.valsum1 = 0.
+        self.valsum2 = 0.
+        self.valN = 0.
         
         RandomVariableNode.__init__(self, name, uid)
 
@@ -366,9 +421,13 @@ cdef class Beta(RandomVariableNode):
                 self.value = prev
 
 
-    def sample(self):
+    def sample(self, update_stats=False):
         self.metropolis_hastings()
         #self.sample_from_prior()
+        if update_stats:
+            self.valN += 1.
+            self.valsum1 += self.value
+            self.valsum2 += self.value * self.value
 
     def rvs(self):
         return self.dist.rvs(*self.params)
