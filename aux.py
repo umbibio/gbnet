@@ -5,6 +5,7 @@ import time
 
 import numpy as np
 import pandas as pd
+from num2words import num2words
 
 def genData(NX=3, num_active_tfs=2, NY=50, AvgNTF=0.5):
     # Start generating simulated data
@@ -66,7 +67,9 @@ def genData(NX=3, num_active_tfs=2, NY=50, AvgNTF=0.5):
     rels = rels.assign(srcactive=[Xgt[src] for src in rels['srcuid']])
     rels = rels.set_index('edge')
 
-    return Xgt, Y, rels
+    ents = pd.DataFrame([num2words(i) for i in range(NX+NY)], columns=['name'])
+
+    return Xgt, ents, rels, Y
 
 def processTrace(model, Xgt=None, rels=None):
     

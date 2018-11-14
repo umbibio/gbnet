@@ -69,16 +69,18 @@ class ORNORModel_0(BaseModel):
 
         Noiseres = result.loc[[f'Noise_{i}' for i in [0,1]]]
 
-        Xres = result.loc[[f'X__{src}_1' for src in src_uids]]
+        Tres = result.loc[[f'T__{src}' for src in src_uids]]
+        Tres = Tres.assign(srcuid=src_uids)
+        Tres = Tres.set_index('srcuid')
+
+        Xres = result.loc[[f'X__{src}_1' for src in src_uids]]['mean'].to_frame('X')
         Xres = Xres.assign(srcuid=src_uids)
-        Xres['pred'] = Xres.apply(lambda r: 1 if r['mean']>0.5 else 0, axis =1)
-        Xres = Xres.assign(idx=[f'X__{src}' for src in src_uids])
-        Xres = Xres.set_index('idx')
+        Xres = Xres.set_index('srcuid')
+        Xres = Xres.assign(T=Tres['mean'])
+        Xres['pred'] = Xres.apply(lambda r: 1 if r['X']*r['T']>0.5 else 0, axis =1)
         if Xgt is not None:
             Xres = Xres.assign(gt=[Xgt[src] for src in src_uids])
 
-        Tres = result.loc[[f'T__{src}' for src in src_uids]]
-        Tres = Tres.assign(srcuid=src_uids)
 
         Sres0 = result.loc[[f'S__{edge}_0' for edge in rels.index]]['mean'].to_frame('-')
         Sres0 = Sres0.assign(idx=[f'S__{edge}' for edge in rels.index])
@@ -99,10 +101,10 @@ class ORNORModel_0(BaseModel):
             pass
 
         if ents is not None:
-            Xres = Xres.assign(name=list(ents.loc[Xres.srcuid].name))
-            Tres = Tres.assign(name=list(ents.loc[Tres.srcuid].name))
-            Sres = Sres.assign(srcname=list(ents.loc[Sres.srcuid].name))
-            Sres = Sres.assign(trgname=list(ents.loc[Sres.trguid].name))
+            Xres = Xres.assign(name=list(ents.loc[Xres.index].name))
+            Tres = Tres.assign(name=list(ents.loc[Tres.index].name))
+            Sres = Sres.assign(srcname=list(ents.loc[Sres['srcuid']].name))
+            Sres = Sres.assign(trgname=list(ents.loc[Sres['trguid']].name))
 
         self.result = {
             'Noise': Noiseres,
@@ -112,7 +114,7 @@ class ORNORModel_0(BaseModel):
         }
 
 
-class ORNORModel(BaseModel):
+class ORNORModel_1(BaseModel):
 
 
     def generate_vars(self):
@@ -186,19 +188,23 @@ class ORNORModel(BaseModel):
             Xres = Xres.assign(gt=[Xgt[src] for src in src_uids])
 
         Tres = result.loc[[f'T__{edge}' for edge in rels.index]]
-        Tres = Tres.assign(edge=rels.index)
+        Tres = Tres.assign(srcuid=list(rels['srcuid']))
+        Tres = Tres.assign(trguid=list(rels['trguid']))
 
-        Sres0 = result.loc[[f'S__{edge}_0' for edge in rels.index]]['mean'].to_frame('-')
-        Sres0 = Sres0.assign(idx=[f'S__{edge}' for edge in rels.index])
-        Sres0 = Sres0.set_index('idx')
-        Sres2 = result.loc[[f'S__{edge}_2' for edge in rels.index]]['mean'].to_frame('+')
-        Sres2 = Sres2.assign(idx=[f'S__{edge}' for edge in rels.index])
-        Sres2 = Sres2.set_index('idx')
+        Sres0 = result.loc[[f'S__{edge}_0' for edge in rels.index]]['mean'].to_frame('S-')
+        Sres0 = Sres0.assign(edge=rels.index)
+        Sres0 = Sres0.set_index('edge')
+        Sres2 = result.loc[[f'S__{edge}_2' for edge in rels.index]]['mean'].to_frame('S+')
+        Sres2 = Sres2.assign(edge=rels.index)
+        Sres2 = Sres2.set_index('edge')
+        SresT = result.loc[[f'T__{edge}' for edge in rels.index]]['mean'].to_frame('T')
+        SresT = SresT.assign(edge=rels.index)
+        SresT = SresT.set_index('edge')
 
-        Sres = pd.concat([Sres0, Sres2], sort=False, axis=1)
+        Sres = pd.concat([Sres0, Sres2, SresT], sort=False, axis=1)
         Sres = Sres.assign(srcuid=list(rels['srcuid']))
         Sres = Sres.assign(trguid=list(rels['trguid']))
-        Sres = Sres.assign(pred=Sres.apply(lambda r: 1 if r['+']>0.5 else (-1 if r['-']>0.5 else 0), axis=1))
+        Sres = Sres.assign(pred=Sres.apply(lambda r: 1 if r['S+']>0.5 else (-1 if r['S-']>0.5 else 0), axis=1))
         deg = pd.Series(self.DEG)
         Sres.assign(DEG=list(deg.loc[Sres['trguid']]))
         try:
@@ -219,3 +225,6 @@ class ORNORModel(BaseModel):
             'T': Tres,
             'S': Sres,
         }
+
+class ORNORModel(ORNORModel_1):
+    pass
