@@ -4,6 +4,7 @@ import pandas as pd
 from multiprocessing import Pool, Manager
 from gbnet.cchain import Chain
 from gbnet.aux import Reporter
+import pathlib
 
 
 class BaseModel(object):
@@ -11,11 +12,12 @@ class BaseModel(object):
 
     __slots__ = [
         'trace', 'chains', 'burn', 'gelman_rubin', 'max_gr', 'vars',
-        '_trace_keys', 'rp', 'rels', 'DEG']
+        '_trace_keys', 'rp', 'ents', 'rels', 'DEG', 'result']
 
 
-    def __init__(self, rels, DEG, nchains=2):
+    def __init__(self, ents, rels, DEG, nchains=2):
 
+        self.ents = ents
         self.rels = rels
         self.DEG = DEG
         
@@ -32,6 +34,15 @@ class BaseModel(object):
         # self.vars = None
         self.rp = Reporter()
 
+        self.result = {}
+
+    def export_results(self, filename):
+        pathlib.Path('results').mkdir(exist_ok=True) 
+        for varname, df in self.result.items():
+            df.to_csv(f'results/{filename}_{varname}.csv')
+
+    def update_result(self):
+        pass
 
     def generate_vars(self):
         pass

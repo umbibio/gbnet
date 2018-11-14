@@ -5,7 +5,7 @@ from gbnet.cnodes import Beta, RandomVariableNode, Noise
 from gbnet.cnodes import Multinomial, ORNOR_YLikelihood
 
 
-class ORNORModel(BaseModel):
+class ORNORModel_0(BaseModel):
 
 
     def generate_vars(self):
@@ -59,10 +59,11 @@ class ORNORModel(BaseModel):
         self.vars['S'] = Snodes
 
 
-    def result(self, Xgt=None):
+    def update_result(self, Xgt=None):
 
         result = self.get_trace_stats(combine=True).drop(columns=['N', 'sum1', 'sum2', 'var'])
 
+        ents = self.ents
         rels = self.rels
         src_uids = rels.srcuid.unique()
 
@@ -90,12 +91,20 @@ class ORNORModel(BaseModel):
         Sres = Sres.assign(srcuid=list(rels['srcuid']))
         Sres = Sres.assign(trguid=list(rels['trguid']))
         Sres = Sres.assign(pred=Sres.apply(lambda r: 1 if r['+']>0.5 else (-1 if r['-']>0.5 else 0), axis=1))
+        deg = pd.Series(self.DEG)
+        Sres.assign(DEG=list(deg.loc[Sres['trguid']]))
         try:
             Sres = Sres.assign(gt=list(rels['val']))
         except KeyError:
             pass
 
-        return {
+        if ents is not None:
+            Xres = Xres.assign(name=list(ents.loc[Xres.srcuid].name))
+            Tres = Tres.assign(name=list(ents.loc[Tres.srcuid].name))
+            Sres = Sres.assign(srcname=list(ents.loc[Sres.srcuid].name))
+            Sres = Sres.assign(trgname=list(ents.loc[Sres.trguid].name))
+
+        self.result = {
             'Noise': Noiseres,
             'X': Xres,
             'T': Tres,
@@ -103,7 +112,7 @@ class ORNORModel(BaseModel):
         }
 
 
-class ORNORModel_2(BaseModel):
+class ORNORModel(BaseModel):
 
 
     def generate_vars(self):
@@ -158,10 +167,11 @@ class ORNORModel_2(BaseModel):
         self.vars['T'] = Tnodes
 
 
-    def result(self, Xgt=None):
+    def update_result(self, Xgt=None):
 
         result = self.get_trace_stats(combine=True).drop(columns=['N', 'sum1', 'sum2', 'var'])
 
+        ents = self.ents
         rels = self.rels
         src_uids = rels.srcuid.unique()
 
@@ -189,12 +199,21 @@ class ORNORModel_2(BaseModel):
         Sres = Sres.assign(srcuid=list(rels['srcuid']))
         Sres = Sres.assign(trguid=list(rels['trguid']))
         Sres = Sres.assign(pred=Sres.apply(lambda r: 1 if r['+']>0.5 else (-1 if r['-']>0.5 else 0), axis=1))
+        deg = pd.Series(self.DEG)
+        Sres.assign(DEG=list(deg.loc[Sres['trguid']]))
         try:
             Sres = Sres.assign(gt=list(rels['val']))
         except KeyError:
             pass
 
-        return {
+        if ents is not None:
+            Xres = Xres.assign(name=list(ents.loc[Xres.srcuid].name))
+            Tres = Tres.assign(srcname=list(ents.loc[Tres.srcuid].name))
+            Tres = Tres.assign(trgname=list(ents.loc[Tres.trguid].name))
+            Sres = Sres.assign(srcname=list(ents.loc[Sres.srcuid].name))
+            Sres = Sres.assign(trgname=list(ents.loc[Sres.trguid].name))
+
+        self.result = {
             'Noise': Noiseres,
             'X': Xres,
             'T': Tres,
