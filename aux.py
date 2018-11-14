@@ -181,6 +181,7 @@ class Reporter(object):
         self.stime = self.ctime
         self.ltime = self.ctime
         self.process = psutil.Process(os.getpid())
+        self.last_report = ""
 
     def reset(self):
         self.ctime = time.time()
@@ -209,6 +210,7 @@ class Reporter(object):
             out += f", Mem usage: {usage:0.02f}GB"
         
         print(out, end=lchar)
+        self.last_report = out
         if showlast:
             self.ltime = self.ctime
 

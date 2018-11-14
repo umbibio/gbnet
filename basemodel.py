@@ -207,3 +207,4 @@ class BaseModel(object):
         else:
             for chain in self.chains:
                 chain.sample(N, thin=thin, quiet=False)
+        self.rp.report()
