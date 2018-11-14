@@ -1,12 +1,15 @@
 #cython: language_level=3, boundscheck=False, profile=True
+from libc.time cimport time
+
 import numpy as np
 import copy
 
+from cython_gsl cimport gsl_rng, gsl_rng_alloc, gsl_rng_set, gsl_rng_free
+from cython_gsl cimport gsl_rng_mt19937, gsl_rng_ranlux, gsl_rng_ranlxs2
+from gbnet.cnodes cimport RandomVariableNode
 
 cdef class Chain:
 
-
-    #__slots__ = [ 'vars', 'id', 'stats', 'trace_keys', ]
 
     cdef dict vars
     cdef int id
@@ -18,10 +21,6 @@ cdef class Chain:
         
         self.vars = copy.copy(model.vars)
         self.id = chain_id
-
-        #for vardict in self.vars.values():
-        #    for node in vardict.values():
-        #        node.set_rng(r[i])
 
         self.stats = {}
         self.trace_keys = model.trace_keys
@@ -35,6 +34,10 @@ cdef class Chain:
         for key in self.trace_keys:
             for stat_key, stat_val in self.stats[key].items():
                 self.stats[key][stat_key] = stat_val * keep_fraction
+        for vardict in self.vars.values():
+            for node in vardict.values():
+                node.burn_stats(burn_fraction)
+
 
 
     def sample(self, N, run_sampled_count=None, thin=1, quiet=True):
@@ -47,6 +50,13 @@ cdef class Chain:
         updt_interval = max(1, N*0.0001)
         steps_until_updt = updt_interval
 
+        # define the random number generator
+        cdef gsl_rng *rng = gsl_rng_alloc(gsl_rng_ranlxs2)
+        # seed it with current time
+        cdef unsigned int seed = np.random.randint(0, 2147483647)
+        gsl_rng_set(rng, seed)
+
+        cdef RandomVariableNode node
 
         for i in range(N):
             steps_until_updt -= 1
@@ -62,11 +72,13 @@ cdef class Chain:
 
             for vardict in self.vars.values():
                 for node in vardict.values():
-                    node.sample(update_stats)
+                    node.sample(rng, update_stats)
 
             if update_stats:
                 steps_until_thin = thin
-
+        
+        gsl_rng_free(rng)
+        
         for vardict in self.vars.values():
             for node in vardict.values():
                 try:
@@ -82,11 +94,7 @@ cdef class Chain:
                     self.stats[node.id]['sum2'] = node.valsum2
                     self.stats[node.id]['N'] = node.valN
 
-
         if not quiet:
             print(f"\rChain {self.id} - Sampling completed")
         if run_sampled_count is not None:
             run_sampled_count[self.id] = N
-        
-        return self
-

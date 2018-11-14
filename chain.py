@@ -27,7 +27,7 @@ class Chain(object):
                 self.stats[key][stat_key] = stat_val * keep_fraction
 
 
-    def sample(self, N, run_sampled_count=None, thin=1):
+    def sample(self, N, run_sampled_count=None, thin=1, quiet=True):
 
         steps_until_thin = thin
 

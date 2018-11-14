@@ -8,7 +8,7 @@ import cython_gsl
 
 extensions = [
         Extension("cnodes", ["cnodes.pyx"], libraries=['gsl', 'gslcblas']),
-        Extension("cchain", ["cchain.pyx"]),
+        Extension("cchain", ["cchain.pyx"], libraries=['gsl', 'gslcblas']),
         Extension("cbasemodel", ["cbasemodel.pyx"]),
         Extension("cmodels", ["cmodels.pyx"]),
     ]

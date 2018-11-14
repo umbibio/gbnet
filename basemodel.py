@@ -11,18 +11,30 @@ class BaseModel(object):
 
     __slots__ = [
         'trace', 'chains', 'burn', 'gelman_rubin', 'max_gr', 'vars',
-        '_trace_keys', 'rp']
+        '_trace_keys', 'rp', 'rels', 'DEG']
 
 
-    def __init__(self):
+    def __init__(self, rels, DEG, nchains=2):
+
+        self.rels = rels
+        self.DEG = DEG
         
         self.chains = []
+        self._trace_keys = []
         
         self.gelman_rubin = {}
         
         self.vars = {}
-        self._trace_keys = None
+        for ch in range(nchains):
+            self.generate_vars()
+            self.chains.append(Chain(self, ch))
+
+        # self.vars = None
         self.rp = Reporter()
+
+
+    def generate_vars(self):
+        pass
 
 
     def burn_stats(self, burn_fraction=1.0):
@@ -65,7 +77,7 @@ class BaseModel(object):
 
     @property
     def trace_keys(self):
-        if self._trace_keys is None:
+        if not self._trace_keys:
             self._trace_keys = []
             for vardict in self.vars.values():
                 for node in vardict.values():
@@ -78,12 +90,6 @@ class BaseModel(object):
                         # value is no array, it won't have Attribute 'size'
                         self._trace_keys.append(node.id)
         return self._trace_keys
-
-
-    def init_chains(self, nchains=2):
-        for ch in range(nchains):
-            self.chains.append(Chain(self, ch))
-        self.vars = None
 
 
     def get_gelman_rubin(self):
@@ -132,7 +138,8 @@ class BaseModel(object):
             return True
         else:
             print(f"\nFailed to converge. "
-                  f"Gelman-Rubin statistics was {max_gr: 7.4} for some parameter")
+                  f"Gelman-Rubin statistics was {max_gr: 7.4} "
+                  f"for parameter {gelman_rubin.idxmax()}")
             return False
 
 
@@ -188,4 +195,4 @@ class BaseModel(object):
             pool.join()
         else:
             for chain in self.chains:
-                chain.sample(N, thin=thin)
+                chain.sample(N, thin=thin, quiet=False)

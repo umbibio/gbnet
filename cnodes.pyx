@@ -25,11 +25,6 @@ cdef double inf = INFINITY
 cdef class RandomVariableNode:
 
 
-    cdef public str id, name
-    cdef object uid
-    cdef public list parents, children, in_edges
-
-    
     def __init__(self, str name, uid=None):
 
         if uid is not None:
@@ -58,25 +53,11 @@ cdef class RandomVariableNode:
     def add_in_edges(self, object elem):
         self.in_edges.append(elem)
 
+    cdef void sample(self, gsl_rng *rng, bint update_stats):
+        pass
+
 
 cdef class Multinomial(RandomVariableNode):
-
-    cdef bint value_cached
-    cdef list _value
-
-    cdef unsigned int *value
-    cdef unsigned int *possible_values
-    cdef double *prob
-    cdef double *logprob
-    cdef unsigned int noutcomes
-    
-    cdef unsigned int *value_buff
-    
-    cdef double *pr
-
-    cdef double *valsum1
-    cdef double *valsum2
-    cdef public double valN
 
 
     def __init__(self, str name, uid, np.ndarray p,
@@ -136,6 +117,13 @@ cdef class Multinomial(RandomVariableNode):
     @property
     def valsum2(self):
         return [self.valsum2[i] for i in range(self.noutcomes)]
+
+    def burn_stats(self, burn_fraction=1.0):
+        keep_fraction = 1. - burn_fraction
+        self.valN *= keep_fraction
+        for i in range(self.noutcomes):
+            self.valsum1[i] *= keep_fraction
+            self.valsum2[i] *= keep_fraction
     
     @cython.cdivision(True)
     cdef void get_outcome_probs(self):
@@ -180,10 +168,10 @@ cdef class Multinomial(RandomVariableNode):
         return loglik
 
     
-    def sample(self, update_stats=False):
+    cdef void sample(self, gsl_rng *rng, bint update_stats):
         self.get_outcome_probs()
         cdef unsigned int N = 1
-        gsl_ran_multinomial(r, self.noutcomes, N, self.pr, self.value)
+        gsl_ran_multinomial(rng, self.noutcomes, N, self.pr, self.value)
         self.value_cached = 0
         if update_stats:
             self.valN += 1.
@@ -240,7 +228,7 @@ cdef class ORNOR_YLikelihood(Multinomial):
         return likelihood
 
 
-    cdef public double get_loglikelihood(self):
+    cpdef double get_loglikelihood(self):
 
         cdef unsigned int size = self.noutcomes
 
@@ -257,6 +245,8 @@ cdef class ORNOR_YLikelihood(Multinomial):
         for i in range(size):
             self.value[i] = self.value_buff[i]
 
+        likelihood *= 1. - self.prob[1]
+
         return log(likelihood)
 
 
@@ -266,14 +256,6 @@ cdef class ORNOR_YLikelihood(Multinomial):
 
 
 cdef class Noise(RandomVariableNode):
-
-
-    cdef public np.ndarray table, value
-    cdef public Beta a, b
-
-    cdef double *valsum1
-    cdef double *valsum2
-    cdef public double valN
 
 
     def __init__(self, name, uid, a=0.050, b=0.001):
@@ -307,10 +289,10 @@ cdef class Noise(RandomVariableNode):
         self.value = np.array([self.a.value, self.b.value])
 
 
-    def sample(self, update_stats=False):
-        self.a.sample()
+    cdef void sample(self, gsl_rng *rng, bint update_stats):
+        self.a.sample(rng, False)
         self.update()
-        self.b.sample()
+        self.b.sample(rng, False)
         self.update()
         
         for Ynod in self.children:
@@ -331,6 +313,12 @@ cdef class Noise(RandomVariableNode):
     def valsum2(self):
         return [self.valsum2[i] for i in range(2)]
     
+    def burn_stats(self, burn_fraction=1.0):
+        keep_fraction = 1. - burn_fraction
+        self.valN *= keep_fraction
+        for i in range(2):
+            self.valsum1[i] *= keep_fraction
+            self.valsum2[i] *= keep_fraction
 
     def rvs(self):
         return np.array([self.a.value, self.b.value])
@@ -338,17 +326,13 @@ cdef class Noise(RandomVariableNode):
 cdef class Beta(RandomVariableNode):
 
 
-    cdef double l_clip, r_clip, scale
-    cdef object dist
-    cdef list params
-    cdef public double value
-    cdef double a, b
-
-    cdef public double valsum1, valsum2, valN
-
-
     def __init__(self, name, uid, a, b, value=None, l_clip=0.0, r_clip=1.0, scale=0.02):
+        RandomVariableNode.__init__(self, name, uid)
         
+        self.l_clip = l_clip
+        self.r_clip = r_clip
+        self.scale = scale
+
         self.dist = st.beta
         self.params = [a, b]
         self.a = a
@@ -359,28 +343,21 @@ cdef class Beta(RandomVariableNode):
         else:
             self.value = self.rvs()
 
-        self.l_clip = l_clip
-        self.r_clip = r_clip
-        self.scale = scale
-
         self.valsum1 = 0.
         self.valsum2 = 0.
         self.valN = 0.
         
-        RandomVariableNode.__init__(self, name, uid)
 
     @cython.cdivision(True)
-    cdef double proposal_norm(self):
+    cdef double proposal_norm(self, gsl_rng * rng):
 
         cdef double proposal
+        cdef bint good = False
 
-        prev = self.value
-        scale = self.scale
-        
-        lft, rgt = self.l_clip, self.r_clip
-        a, b = (lft - prev) / scale, (rgt - prev) / scale
-
-        proposal = st.truncnorm.rvs(a, b, prev, scale)
+        while not good:
+            proposal = self.value + gsl_ran_gaussian(rng, self.scale)
+            if proposal > self.l_clip and proposal < self.r_clip:
+                good = True
         
         return proposal
 
@@ -405,29 +382,44 @@ cdef class Beta(RandomVariableNode):
         self.value = self.dist.rvs(*self.params)
     
 
-    cdef void metropolis_hastings(self):
+    cdef void metropolis_hastings(self, gsl_rng * rng):
 
         cdef bint accept
-        
+
         prev = self.value
         prev_loglik = self.get_loglikelihood()
-        self.value = self.proposal_norm()
+        self.value = self.proposal_norm(rng)
         prop_loglik = self.get_loglikelihood()
         
         if prev_loglik > -inf:
             logratio = prop_loglik - prev_loglik
-            accept = logratio >= 0. or logratio > - gsl_ran_exponential(r, 1.0)
+            accept = logratio >= 0. or logratio > - gsl_ran_exponential(rng, 1.0)
             if not accept:
                 self.value = prev
 
 
-    def sample(self, update_stats=False):
-        self.metropolis_hastings()
+    cdef void sample(self, gsl_rng * rng, bint update_stats):
+        self.metropolis_hastings(rng)
         #self.sample_from_prior()
         if update_stats:
             self.valN += 1.
             self.valsum1 += self.value
             self.valsum2 += self.value * self.value
 
+
+    def burn_stats(self, burn_fraction=1.0):
+        keep_fraction = 1. - burn_fraction
+        self.valN *= keep_fraction
+        self.valsum1 *= keep_fraction
+        self.valsum2 *= keep_fraction
+
+
     def rvs(self):
-        return self.dist.rvs(*self.params)
+        good = False
+
+        while not good:
+            value = np.random.beta(self.a, self.b)
+            if value > self.l_clip and value < self.r_clip:
+                good = True
+
+        return value
