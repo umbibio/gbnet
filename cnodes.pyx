@@ -245,7 +245,8 @@ cdef class ORNOR_YLikelihood(Multinomial):
         for i in range(size):
             self.value[i] = self.value_buff[i]
 
-        likelihood *= 1. - self.prob[1]
+        # penalize if this target gene wasn't differentially expressed
+        likelihood *= 1. - self.value[1]*0.999
 
         return log(likelihood)
 
