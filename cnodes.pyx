@@ -10,8 +10,6 @@ from libc.time cimport time
 import numpy as np
 cimport numpy as np
 
-import scipy.stats as st
-
 from cython_gsl cimport *
 
 # define the random number generator
@@ -246,14 +244,13 @@ cdef class ORNOR_YLikelihood(Multinomial):
             self.value[i] = self.value_buff[i]
 
         # penalize if this target gene wasn't differentially expressed
-        likelihood *= 1. - self.value[1]*0.999
+        likelihood *= 1. - self.value[1]*0.9
 
         return log(likelihood)
 
 
     def sample(self):
         pass
-        #self.value = self.dist.rvs(*self.params)
 
 
 cdef class Noise(RandomVariableNode):
@@ -334,7 +331,6 @@ cdef class Beta(RandomVariableNode):
         self.r_clip = r_clip
         self.scale = scale
 
-        self.dist = st.beta
         self.params = [a, b]
         self.a = a
         self.b = b
@@ -379,10 +375,6 @@ cdef class Beta(RandomVariableNode):
         return loglik
 
 
-    def sample_from_prior(self):
-        self.value = self.dist.rvs(*self.params)
-    
-
     cdef void metropolis_hastings(self, gsl_rng * rng):
 
         cdef bint accept
@@ -401,7 +393,7 @@ cdef class Beta(RandomVariableNode):
 
     cdef void sample(self, gsl_rng * rng, bint update_stats):
         self.metropolis_hastings(rng)
-        #self.sample_from_prior()
+
         if update_stats:
             self.valN += 1.
             self.valsum1 += self.value

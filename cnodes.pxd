@@ -58,7 +58,6 @@ cdef class Noise(RandomVariableNode):
 cdef class Beta(RandomVariableNode):
 
     cdef double l_clip, r_clip, scale
-    cdef object dist
     cdef list params
     cdef public double value
     cdef double a, b
