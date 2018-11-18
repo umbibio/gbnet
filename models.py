@@ -33,15 +33,20 @@ class ORNORModel_0(BaseModel):
 
         Xnodes, Tnodes = {}, {}
         for src in X_list:
-            Xnodes[src] = Multinomial('X', src, np.array([0.60, 0.40]))
+            Xnodes[src] = Multinomial('X', src, np.array([0.70, 0.30]))
             Tnodes[src] = Beta('T', src, 2, 2, scale=0.1)
 
         Snodes = {}
         for edg in rels.index:
             
             src, trg = edg
+
+            if Ynodes[trg].value[1]:
+                Sprior = np.array([0.2, 0.6, 0.2])
+            else:
+                Sprior = np.array([0.4, 0.2, 0.4])
             
-            Snodes[edg] = Multinomial('S', edg, np.array([0.3, 0.4, 0.3]))
+            Snodes[edg] = Multinomial('S', edg, Sprior)
             Snodes[edg].children.append(Ynodes[trg])
             
             Xnodes[src].children.append(Ynodes[trg])
