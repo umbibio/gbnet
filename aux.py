@@ -26,7 +26,7 @@ def genData(NX=3, num_active_tfs=2, NY=50, AvgNTF=0.5):
         # pick random TFs
         for src in np.random.choice(list(Xgt.keys()), size=num_edges, replace=False):
             # here an edge can be upregulator (1), downregulator (-1) or not valid (0)
-            edges[(src, trg)] = np.random.choice([-1, 0, 1], p=[0.3, 0.4, 0.3])
+            edges[(src, trg)] = np.random.choice([-1, 0, 1], p=[0.05, 0.9, 0.05])
 
     # randomize current activation state for TFs
     # and then determine the state of targeted genes
