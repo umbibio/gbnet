@@ -144,7 +144,7 @@ class BaseModel(object):
 
         max_gr = gelman_rubin.max()
         
-        if max_gr < 1.1:
+        if max_gr < 1.15:
             print("\nChains have converged")
             return True
         else:
