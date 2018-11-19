@@ -244,7 +244,7 @@ cdef class ORNOR_YLikelihood(Multinomial):
             self.value[i] = self.value_buff[i]
 
         # penalize if this target gene wasn't differentially expressed
-        likelihood *= 1. - self.value[1]*0.9
+        # likelihood *= 1. - self.value[1]*0.9999
 
         return log(likelihood)
 
@@ -256,9 +256,9 @@ cdef class ORNOR_YLikelihood(Multinomial):
 cdef class Noise(RandomVariableNode):
 
 
-    def __init__(self, name, uid, a=0.050, b=0.001):
-        self.a = Beta('a', 0, 5, 100, value=a, r_clip=0.5, scale=0.02)
-        self.b = Beta('b', 0, 1, 100, value=b, r_clip=0.5, scale=0.02)
+    def __init__(self, name, uid, a=0.0050, b=0.0005):
+        self.a = Beta('a', 0, 1, 200, value=a, r_clip=0.5, scale=a/2)
+        self.b = Beta('b', 0, 1, 2000, value=b, r_clip=0.5, scale=b/2)
         self.table = np.eye(3, dtype=float)
         self.update()
 
