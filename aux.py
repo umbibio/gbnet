@@ -44,8 +44,8 @@ def genData(NX=3, num_active_tfs=2, NY=50, AvgNTF=0.5):
                 else:
                     Y[trg] += edges[edge]*Xgt[src]
 
-    a = 0.02
-    b = 0.005
+    a = 0.005
+    b = 0.0005
 
     # get only the signs for gene activation states
     for trg in Y.keys():
