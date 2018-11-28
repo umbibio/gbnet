@@ -12,14 +12,17 @@ class BaseModel(object):
 
     __slots__ = [
         'trace', 'chains', 'burn', 'gelman_rubin', 'max_gr', 'vars',
-        '_trace_keys', 'rp', 'ents', 'rels', 'DEG', 'result']
+        '_trace_keys', 'rp', 'ents', 'rels', 'DEG', 'result', 'xpriors',
+        'tpriors']
 
 
-    def __init__(self, ents, rels, DEG, nchains=2):
+    def __init__(self, ents, rels, DEG, xpriors={}, tpriors={}, nchains=2):
 
         self.ents = ents
         self.rels = rels
         self.DEG = DEG
+        self.xpriors = xpriors
+        self.tpriors = tpriors
         
         self.chains = []
         self._trace_keys = []
