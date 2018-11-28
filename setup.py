@@ -17,6 +17,6 @@ extensions = [
 setup(
     name = 'gbnet',
     cmdclass = {'build_ext': build_ext},
-    ext_modules = cythonize(extensions, annotate=True)
+    ext_modules = cythonize( extensions, annotate=True, include_path=[ '../', './' ])
 )
 
