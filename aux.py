@@ -15,7 +15,7 @@ def genData(NX=3, num_active_tfs=2, NY=50, AvgNTF=0.5):
     
     Xgt = dict(zip(list(range(NX)), [0]*NX))
     Y = dict(zip(list(range(NX,NX+NY)), [0]*NY))
-    
+
     # generate a random set of interations between TFs and genes
     edges = {}
     for trg in Y.keys():
@@ -57,6 +57,21 @@ def genData(NX=3, num_active_tfs=2, NY=50, AvgNTF=0.5):
         if sgn == 1:
             Y[trg] = np.random.choice([-1, 0, 1], p=[b, a, 1.-a-b])
         
+    # generate more random non-applicable edges
+    for src in Xgt.keys():
+        
+        # randomize the number of target genes for this TF
+        num_edges = int(np.random.exponential(len(Y)/5))
+        num_edges = min(num_edges, len(Y))
+
+        # pick random genes
+        for trg in np.random.choice(list(Y.keys()), size=num_edges, replace=False):
+            try:
+                edges[(src, trg)] = edges[(src, trg)]
+            except KeyError:
+                edges[(src, trg)] = 0
+    
+    
     # this is the possible associations data
     rels = pd.DataFrame(list(edges.keys()), columns=['srcuid', 'trguid'])
     rels = rels.assign(val=list(edges.values()))
