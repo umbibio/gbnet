@@ -223,7 +223,7 @@ cdef class ORNOR_YLikelihood(Multinomial):
                     pr1 *= 1. - t.value * x.value[1]
             likelihood = pr1
         
-        return likelihood
+        return likelihood * 0.997 + 0.001
 
 
     cpdef double get_loglikelihood(self):
