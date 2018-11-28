@@ -5,7 +5,7 @@ from gbnet.cnodes import Beta, RandomVariableNode, Noise
 from gbnet.cnodes import Multinomial, ORNOR_YLikelihood
 
 
-class ORNORModel_0(BaseModel):
+class ORNORModel(BaseModel):
 
 
     def generate_vars(self):
@@ -264,5 +264,3 @@ class ORNORModel_1(BaseModel):
         }
 
 
-class ORNORModel(ORNORModel_0):
-    pass
