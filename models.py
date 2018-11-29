@@ -60,6 +60,18 @@ class ORNORModel(BaseModel):
                 Sprior = np.array([0.005, 0.990, 0.005])
 
             # Sprior = np.array([0.0025, 0.9950, 0.0025])
+            try:
+                reltype = rel['type']
+            except KeyError:
+                reltype = 'unknown'
+
+            if reltype != 'unknown':
+                if reltype == 'ambiguous':
+                    Sprior = np.array([0.49, 0.02, 0.49])
+                elif reltype == 'increase':
+                    Sprior = np.array([0.01, 0.01, 0.98])
+                elif reltype == 'decrease':
+                    Sprior = np.array([0.98, 0.01, 0.01])
 
             try:
                 # overwrite S prior if one was provided
