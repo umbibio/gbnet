@@ -45,8 +45,9 @@ class ORNORModel(BaseModel):
                 Tprior_a, Tprior_b = self.tpriors[src]
                 Tprior_a, Tprior_b = min(Tprior_a, 20), min(Tprior_b, 20)
             except KeyError:
-                Tprior_a, Tprior_b = 2, 2
-            Tnodes[src] = Beta('T', src, Tprior_a, Tprior_b, value=1.0, scale=0.1)
+                p = 0.80
+                Tprior_a, Tprior_b = 1/(1-p),1/p
+            Tnodes[src] = Beta('T', src, Tprior_a, Tprior_b, value=1.0)
 
         Snodes = {}
         for edg, rel in rels.iterrows():
@@ -98,7 +99,7 @@ class ORNORModel(BaseModel):
 
         self.vars['Noise'] = {0: noiseNode}
         self.vars['X'] = Xnodes
-        # self.vars['T'] = Tnodes
+        self.vars['T'] = Tnodes
         self.vars['S'] = Snodes
 
 
@@ -114,15 +115,15 @@ class ORNORModel(BaseModel):
 
         Noiseres = result.loc[[f'Noise_{i}' for i in [0,1]]]
 
-        # Tres = result.loc[[f'T__{src}' for src in src_uids]]
-        # Tres = Tres.assign(srcuid=src_uids)
-        # Tres = Tres.set_index('srcuid')
+        Tres = result.loc[[f'T__{src}' for src in src_uids]]
+        Tres = Tres.assign(srcuid=src_uids)
+        Tres = Tres.set_index('srcuid')
 
         Xres = result.loc[[f'X__{src}_1' for src in src_uids]]['mean'].to_frame('X')
         Xres = Xres.assign(srcuid=src_uids)
         Xres = Xres.set_index('srcuid')
-        # Xres = Xres.assign(T=Tres['mean'])
-        # Xres['XT'] = Xres.apply(lambda r: r['X']*r['T'], axis =1)
+        Xres = Xres.assign(T=Tres['mean'])
+        Xres['XT'] = Xres.apply(lambda r: r['X']*r['T'], axis =1)
         Xres['pred'] = Xres.apply(lambda r: 1 if r['X']>0.5 else 0, axis =1)
         if Xgt is not None:
             Xres = Xres.assign(gt=[Xgt[src] for src in src_uids])
@@ -148,7 +149,7 @@ class ORNORModel(BaseModel):
 
         if ents is not None:
             Xres = Xres.assign(name=list(ents.loc[Xres.index].name))
-            # Tres = Tres.assign(name=list(ents.loc[Tres.index].name))
+            Tres = Tres.assign(name=list(ents.loc[Tres.index].name))
             Sres = Sres.assign(srcname=list(ents.loc[Sres['srcuid']].name))
             Sres = Sres.assign(trgname=list(ents.loc[Sres['trguid']].name))
         Sres = Sres.assign(DEG=list(rels['DEG']))
@@ -158,7 +159,7 @@ class ORNORModel(BaseModel):
         self.result = {
             'Noise': Noiseres,
             'X': Xres,
-            # 'T': Tres,
+            'T': Tres,
             'S': Sres,
         }
 
