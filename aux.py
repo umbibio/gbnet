@@ -81,6 +81,7 @@ def genData(NX=3, num_active_tfs=2, NY=50, AvgNTF=0.5):
     rels = rels.assign(edge=[(src, trg) for src, trg in zip(rels['srcuid'], rels['trguid'])])
     rels = rels.assign(srcactive=[Xgt[src] for src in rels['srcuid']])
     rels = rels.set_index('edge')
+    rels['type'] = 'conflict'
 
     ents = pd.DataFrame([num2words(i) for i in range(NX+NY)], columns=['name'])
 
