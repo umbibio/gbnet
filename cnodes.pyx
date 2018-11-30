@@ -257,8 +257,8 @@ cdef class Noise(RandomVariableNode):
 
 
     def __init__(self, name, uid, a=0.0050, b=0.0005):
-        self.a = Beta('a', 0, 1, 200, value=a, r_clip=0.5, scale=a/2)
-        self.b = Beta('b', 0, 1, 2000, value=b, r_clip=0.5, scale=b/2)
+        self.a = Beta('a', 0, 1, 200, value=a, r_clip=0.5)
+        self.b = Beta('b', 0, 1, 2000, value=b, r_clip=0.5)
         self.table = np.eye(3, dtype=float)
         self.update()
 
@@ -324,8 +324,12 @@ cdef class Noise(RandomVariableNode):
 cdef class Beta(RandomVariableNode):
 
 
-    def __init__(self, name, uid, a, b, value=None, l_clip=0.0, r_clip=1.0, scale=0.02):
+    def __init__(self, name, uid, a, b, value=None, l_clip=0.0, r_clip=1.0, scale=-1.0):
         RandomVariableNode.__init__(self, name, uid)
+
+        if scale < 0.0:
+            # use the standard deviation of beta distribution
+            scale = np.sqrt(a*b/((a+b)**2*(a+b+1)))
         
         self.l_clip = l_clip
         self.r_clip = r_clip
