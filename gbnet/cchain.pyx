@@ -6,7 +6,7 @@ import copy
 
 from cython_gsl cimport gsl_rng, gsl_rng_alloc, gsl_rng_set, gsl_rng_free
 from cython_gsl cimport gsl_rng_mt19937, gsl_rng_ranlux, gsl_rng_ranlxs2
-from gbnet.cnodes cimport RandomVariableNode
+from .cnodes cimport RandomVariableNode
 
 cdef class Chain:
 

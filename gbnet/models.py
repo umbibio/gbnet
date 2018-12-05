@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
-from gbnet.basemodel import BaseModel
-from gbnet.cnodes import Beta, RandomVariableNode, Noise
-from gbnet.cnodes import Multinomial, ORNOR_YLikelihood
+from .basemodel import BaseModel
+from .cnodes import Beta, RandomVariableNode, Noise
+from .cnodes import Multinomial, ORNOR_YLikelihood
 
 
 class ORNORModel(BaseModel):

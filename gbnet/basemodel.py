@@ -1,33 +1,54 @@
-#cython: language_level=3, boundscheck=False, profile=True
 import signal, time
 import numpy as np
 import pandas as pd
 from multiprocessing import Pool, Manager
-from gbnet.cchain import Chain
-from gbnet.aux import Reporter
+from .cchain import Chain
+from .aux import Reporter
+import pathlib
 
-cimport numpy as np
 
-cdef class BaseModel:
+class BaseModel(object):
 
-    #trace
-    cdef public list chains
-    #burn
-    cdef public object gelman_rubin
-    cdef double max_gr
-    cdef public dict vars
-    cdef list _trace_keys
-    cdef object rp
 
-    def __init__(self):
+    __slots__ = [
+        'trace', 'chains', 'burn', 'gelman_rubin', 'max_gr', 'vars',
+        '_trace_keys', 'rp', 'ents', 'rels', 'DEG', 'result', 'xpriors',
+        'tpriors']
+
+
+    def __init__(self, ents, rels, DEG, xpriors={}, tpriors={}, nchains=2):
+
+        self.ents = ents
+        self.rels = rels
+        self.DEG = DEG
+        self.xpriors = xpriors
+        self.tpriors = tpriors
         
         self.chains = []
+        self._trace_keys = []
         
-        self.gelman_rubin = pd.Series()
+        self.gelman_rubin = {}
         
         self.vars = {}
-        self._trace_keys = []
+        for ch in range(nchains):
+            self.generate_vars()
+            self.chains.append(Chain(self, ch))
+
+        # self.vars = None
         self.rp = Reporter()
+
+        self.result = {}
+
+    def export_results(self, filename):
+        pathlib.Path('results').mkdir(exist_ok=True) 
+        for varname, df in self.result.items():
+            df.to_csv(f'results/{filename}_{varname}.csv')
+
+    def update_result(self):
+        pass
+
+    def generate_vars(self):
+        pass
 
 
     def burn_stats(self, burn_fraction=1.0):
@@ -85,12 +106,6 @@ cdef class BaseModel:
         return self._trace_keys
 
 
-    def init_chains(self, nchains=2):
-        for ch in range(nchains):
-            self.chains.append(Chain(self, ch))
-        self.vars = None
-
-
     def get_gelman_rubin(self):
 
         nchains = len(self.chains)
@@ -132,17 +147,18 @@ cdef class BaseModel:
 
         max_gr = gelman_rubin.max()
         
-        if max_gr < 1.1:
+        if max_gr < 1.15:
             print("\nChains have converged")
             return True
         else:
             print(f"\nFailed to converge. "
-                  f"Gelman-Rubin statistics was {max_gr: 7.4} for some parameter")
+                  f"Gelman-Rubin statistics was {max_gr: 7.4} "
+                  f"for parameter {gelman_rubin.idxmax()}")
             return False
 
 
-    def sample(self, N=200, thin=1, njobs=2, quiet=True):
-
+    def sample(self, N=200, thin=1, njobs=2):
+            
         if njobs > 1:
             
             chains = len(self.chains)
@@ -159,7 +175,7 @@ cdef class BaseModel:
             try:
                 manager = Manager()
                 sampled = manager.list([0]*chains)
-                mres = [pool.apply_async(chain.sample, (N,)) for chain in self.chains]
+                mres = [pool.apply_async(chain.sample, (N, sampled, thin)) for chain in self.chains]
                 pool.close()
                 
                 timer = 90 * 24 * 60 * 60 * 4 # 90 days timeout
@@ -190,10 +206,8 @@ cdef class BaseModel:
                 print("\n\nThe workers ran out of time. Terminating simulation.\n")
                 raise SystemExit
             
-            pool.join()            
-            
+            pool.join()
         else:
             for chain in self.chains:
-                chain.sample(N, thin=thin, quiet=quiet)
-            if not quiet:
-                self.rp.report()
+                chain.sample(N, thin=thin, quiet=False)
+        self.rp.report()
