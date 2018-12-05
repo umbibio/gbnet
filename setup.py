@@ -50,5 +50,6 @@ setuptools.setup(
 
     cmdclass = {'build_ext': build_ext},
     ext_modules = cythonize(extensions, annotate=False),
+    install_requires=['numpy', 'pandas', 'psutil', 'num2words'],
     zip_safe=False,
 )
