@@ -168,6 +168,7 @@ class ORNORModel(BaseModel):
         Sres = Sres.assign(DEG=list(rels['DEG']))
         Xres = Xres.assign(out_total=[len(rels[rels['srcuid']==src]) for src in src_uids])
         Xres = Xres.assign(out_deg=[rels[rels.srcuid==src]['DEG'].abs().sum() for src in src_uids])
+        Xres = Xres.sort_values(by='XT', ascending=False)
 
         self.result = {
             'Noise': Noiseres,
