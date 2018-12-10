@@ -180,7 +180,7 @@ class BaseModel(object):
             self.rp.report("\nChains have converged")
             return True
         else:
-            self.rp.report(f"\nFailed to converge. {non} out of {tot} parameters above {threshold}. "
+            self.rp.report(f"Failed to converge. {non} out of {tot} parameters above {threshold}. "
                   f"Gelman-Rubin statistics was {max_gr: 7.4} "
                   f"for parameter {gelman_rubin.idxmax()}")
             return False
