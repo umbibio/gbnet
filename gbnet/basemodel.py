@@ -18,6 +18,31 @@ class BaseModel(object):
 
     def __init__(self, ents, rels, DEG, xpriors={}, tpriors={}, nchains=2):
 
+        # Make sure the indices are appropriate
+        assertion_msg = ("Please make sure that provided ents file is a "
+                         "Pandas Dataframe with column 'uid' available")
+        # for ents
+        if 'uid' in ents.columns:
+            ents = ents.set_index('uid')
+        assert ents.index.name == 'uid', assertion_msg
+
+        # for rels
+        if rels.index.name != 'edge':
+            rels.index = list(zip(rels.srcuid, rels.trguid))
+            rels.index.name = 'edge'
+
+        # for DEG
+        assertion_msg = ("Please make sure that provided DEG file is either a "
+                         "dictionary or a Pandas Series with uids as keys/index")
+        if isinstance(DEG, pd.DataFrame):
+            if 'uid' in DEG.columns:
+                DEG = DEG.set_index('uid')
+            assert DEG.index.name == 'uid', assertion_msg
+            DEG = DEG['val']
+        else:
+            assert (isinstance(DEG, pd.Series)
+                    or isinstance(DEG, dict)), assertion_msg
+
         self.ents = ents
         self.rels = rels
         self.DEG = DEG
