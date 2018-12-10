@@ -1,4 +1,4 @@
-#cython: language_level=3, boundscheck=False, profile=True
+#cython: language_level=3, boundscheck=False
 from cython_gsl cimport gsl_rng
 cimport numpy as np
 
@@ -39,6 +39,8 @@ cdef class Multinomial(RandomVariableNode):
 
 cdef class ORNOR_YLikelihood(Multinomial):
 
+    cdef Beta Znode
+    
     cdef double get_model_likelihood(self)
     cpdef double get_loglikelihood(self)
 

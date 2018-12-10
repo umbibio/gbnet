@@ -20,6 +20,16 @@ class ORNORModel(BaseModel):
 
         noiseNode = Noise('Noise', None, a=0.005, b=0.0005)
 
+        Znodes = {}
+
+        mean = 0.01
+        Zprior_a, Zprior_b = 1/(1-mean),1/mean
+        Znodes[0] = Beta('Z', 0, Zprior_a, Zprior_b, value=mean)
+
+        mean = 0.99
+        Zprior_a, Zprior_b = 1/(1-mean),1/mean
+        Znodes[1] = Beta('Z', 1, Zprior_a, Zprior_b, value=mean)
+
         Ynodes = {}
         for trg, val in DEG.items():
             obs_val = np.array([0, 0, 0])
@@ -37,7 +47,7 @@ class ORNORModel(BaseModel):
                 X1prior = self.xpriors[src]
                 X0prior = 1. - X1prior
             except KeyError:
-                X0prior = 0.99
+                X0prior = 0.90
                 X1prior = 1. - X0prior
             Xnodes[src] = Multinomial('X', src, np.array([X0prior, X1prior]))
 
@@ -45,9 +55,9 @@ class ORNORModel(BaseModel):
                 Tprior_a, Tprior_b = self.tpriors[src]
                 Tprior_a, Tprior_b = min(Tprior_a, 20), min(Tprior_b, 20)
             except KeyError:
-                p = 0.80
-                Tprior_a, Tprior_b = 1/(1-p),1/p
-            Tnodes[src] = Beta('T', src, Tprior_a, Tprior_b, value=1.0)
+                mean = 0.80
+                Tprior_a, Tprior_b = 1/(1-mean),1/mean
+            Tnodes[src] = Beta('T', src, Tprior_a, Tprior_b, value=mean)
 
         Snodes = {}
         for edg, rel in rels.iterrows():
@@ -56,11 +66,13 @@ class ORNORModel(BaseModel):
 
             if Ynodes[trg].value[1]:
                 # target not diff exp, less likely to be regulated?
-                Sprior = np.array([0.0005, 0.9990, 0.0005])
+                # Sprior = np.array([0.0005, 0.9990, 0.0005])
+                Znod = Znodes[0]
             else:
-                Sprior = np.array([0.005, 0.990, 0.005])
+                # Sprior = np.array([0.005, 0.990, 0.005])
+                Znod = Znodes[1]
 
-            # Sprior = np.array([0.0025, 0.9950, 0.0025])
+            Sprior = np.array([0.2, 0.6, 0.2])
             try:
                 reltype = rel['type']
             except KeyError:
@@ -90,10 +102,9 @@ class ORNORModel(BaseModel):
             
             Xnodes[src].children.append(Ynodes[trg])
             Tnodes[src].children.append(Ynodes[trg])
-            
-            Ynodes[trg].parents.append(Xnodes[src])
-            Ynodes[trg].parents.append(Tnodes[src])
-            Ynodes[trg].parents.append(Snodes[edg])
+            Znod.children.append(Ynodes[trg])
+
+            Ynodes[trg].set_Znode(Znod)
             
             Ynodes[trg].in_edges.append([Xnodes[src], Tnodes[src], Snodes[edg]])
 
@@ -101,6 +112,7 @@ class ORNORModel(BaseModel):
         self.vars['X'] = Xnodes
         self.vars['T'] = Tnodes
         self.vars['S'] = Snodes
+        self.vars['Z'] = Znodes
 
 
     def update_result(self, Xgt=None):

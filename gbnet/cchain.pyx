@@ -1,4 +1,4 @@
-#cython: language_level=3, boundscheck=False, profile=True
+#cython: language_level=3, boundscheck=False
 from libc.time cimport time
 
 import numpy as np
