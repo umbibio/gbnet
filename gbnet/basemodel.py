@@ -65,9 +65,8 @@ class BaseModel(object):
         self.result = {}
 
     def export_results(self, filename):
-        pathlib.Path('results').mkdir(exist_ok=True) 
         for varname, df in self.result.items():
-            df.to_csv(f'results/{filename}_{varname}.csv')
+            df.to_csv(f'{filename}_{varname}.csv')
 
     def update_result(self):
         pass
@@ -178,10 +177,10 @@ class BaseModel(object):
         max_gr = gelman_rubin.max()
         
         if max_gr < threshold:
-            print("\nChains have converged")
+            self.rp.report("\nChains have converged")
             return True
         else:
-            print(f"\nFailed to converge. {non} out of {tot} parameters above {threshold}. "
+            self.rp.report(f"\nFailed to converge. {non} out of {tot} parameters above {threshold}. "
                   f"Gelman-Rubin statistics was {max_gr: 7.4} "
                   f"for parameter {gelman_rubin.idxmax()}")
             return False
