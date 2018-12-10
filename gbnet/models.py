@@ -22,11 +22,11 @@ class ORNORModel(BaseModel):
 
         Znodes = {}
 
-        mean = 0.01
+        mean = 0.0001
         Zprior_a, Zprior_b = 1/(1-mean),1/mean
         Znodes[0] = Beta('Z', 0, Zprior_a, Zprior_b, value=mean)
 
-        mean = 0.99
+        mean = 0.9999
         Zprior_a, Zprior_b = 1/(1-mean),1/mean
         Znodes[1] = Beta('Z', 1, Zprior_a, Zprior_b, value=mean)
 
@@ -55,7 +55,7 @@ class ORNORModel(BaseModel):
                 Tprior_a, Tprior_b = self.tpriors[src]
                 Tprior_a, Tprior_b = min(Tprior_a, 20), min(Tprior_b, 20)
             except KeyError:
-                mean = 0.80
+                mean = 0.90
                 Tprior_a, Tprior_b = 1/(1-mean),1/mean
             Tnodes[src] = Beta('T', src, Tprior_a, Tprior_b, value=mean)
 
@@ -110,8 +110,8 @@ class ORNORModel(BaseModel):
             Ynodes[trg].in_edges.append([Xnodes[src], Tnodes[src], Snodes[edg]])
 
         self.vars['Noise'] = {0: noiseNode}
-        self.vars['X'] = Xnodes
         self.vars['T'] = Tnodes
+        self.vars['X'] = Xnodes
         self.vars['S'] = Snodes
         self.vars['Z'] = Znodes
 
@@ -127,6 +127,7 @@ class ORNORModel(BaseModel):
         src_uids = rels.srcuid.unique()
 
         Noiseres = result.loc[[f'Noise_{i}' for i in [0,1]]]
+        Zres = result.loc[[f'Z__{i}' for i in [0,1]]]
 
         Tres = result.loc[[f'T__{src}' for src in src_uids]]
         Tres = Tres.assign(srcuid=src_uids)
@@ -172,6 +173,7 @@ class ORNORModel(BaseModel):
 
         self.result = {
             'Noise': Noiseres,
+            'Z': Zres,
             'X': Xres,
             'T': Tres,
             'S': Sres,
