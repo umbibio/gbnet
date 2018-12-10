@@ -65,9 +65,9 @@ class BaseModel(object):
         self.result = {}
 
     def export_results(self, filename):
-        pathlib.Path('results').mkdir(exist_ok=True) 
+        # pathlib.Path('results').mkdir(exist_ok=True) 
         for varname, df in self.result.items():
-            df.to_csv(f'results/{filename}_{varname}.csv')
+            df.to_csv(f'{filename}_{varname}.csv')
 
     def update_result(self):
         pass
