@@ -79,13 +79,14 @@ class ORNORModel(BaseModel):
                 reltype = 'unknown'
 
             if reltype != 'unknown':
-                if reltype == 'ambiguous':
-                    Sprior = np.array([0.49, 0.02, 0.49])
-                elif reltype == 'increase':
-                    Sprior = np.array([0.01, 0.01, 0.98])
-                elif reltype == 'decrease':
-                    Sprior = np.array([0.98, 0.01, 0.01])
-
+                try:
+                    if rel['is_trrust']:
+                        Sprior = np.array([0.49, 0.02, 0.49])
+                    elif rel['is_chipatlas']:
+                        Sprior = np.array([0.2, 0.6, 0.2])
+                except KeyError:
+                    pass
+            
             try:
                 # overwrite S prior if one was provided
                 priorA = rel['prior']
