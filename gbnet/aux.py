@@ -21,7 +21,8 @@ def genData(NX=3, num_active_tfs=2, NY=50, AvgNTF=0.5):
     for trg in Y.keys():
         
         # randomize the number of TFs for this gene
-        num_edges = np.random.binomial(NX, 1.0/NX*AvgNTF)
+        num_edges = round (np.random.gamma(3, AvgNTF/3))
+        num_edges = min(num_edges, len(Xgt))
 
         # pick random TFs
         for src in np.random.choice(list(Xgt.keys()), size=num_edges, replace=False):
@@ -58,18 +59,18 @@ def genData(NX=3, num_active_tfs=2, NY=50, AvgNTF=0.5):
             Y[trg] = np.random.choice([-1, 0, 1], p=[b, a, 1.-a-b])
         
     # generate more random non-applicable edges
-    for src in Xgt.keys():
+    # for src in Xgt.keys():
         
-        # randomize the number of target genes for this TF
-        num_edges = int(np.random.exponential(len(Y)/5))
-        num_edges = min(num_edges, len(Y))
+    #     # randomize the number of target genes for this TF
+    #     num_edges = int(np.random.exponential(len(Y)/5))
+    #     num_edges = min(num_edges, len(Y))
 
-        # pick random genes
-        for trg in np.random.choice(list(Y.keys()), size=num_edges, replace=False):
-            try:
-                edges[(src, trg)] = edges[(src, trg)]
-            except KeyError:
-                edges[(src, trg)] = 0
+    #     # pick random genes
+    #     for trg in np.random.choice(list(Y.keys()), size=num_edges, replace=False):
+    #         try:
+    #             edges[(src, trg)] = edges[(src, trg)]
+    #         except KeyError:
+    #             edges[(src, trg)] = 0
     
     
     # this is the possible associations data
@@ -84,6 +85,7 @@ def genData(NX=3, num_active_tfs=2, NY=50, AvgNTF=0.5):
     rels['type'] = 'conflict'
 
     ents = pd.DataFrame([num2words(i) for i in range(NX+NY)], columns=['name'])
+    ents.index.name = 'uid'
 
     return Xgt, ents, rels, Y
 
