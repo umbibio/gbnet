@@ -1,10 +1,10 @@
-#cython: language_level=3, boundscheck=False, profile=True
+#cython: language_level=3, boundscheck=False
 import cython
 from cython import sizeof
 
 from libc.stdlib cimport malloc
 from libc.string cimport strcpy, strlen
-from libc.math cimport sqrt, exp, log, INFINITY
+from libc.math cimport sqrt, exp, log, INFINITY, pow
 from libc.time cimport time
 
 import numpy as np
@@ -191,39 +191,53 @@ cdef class ORNOR_YLikelihood(Multinomial):
         for i in range(self.noutcomes):
             self.prob[i] = value[i]
 
+    def set_Znode(self, node):
+        self.Znode = node
 
     cdef double get_model_likelihood(self):
-        cdef double likelihood, pr0, pr1, pr2
+        cdef double likelihood, pr0, pr1, pr2, q0, q1, q2, zvalue, zcompl, zcompl_pn
         cdef Multinomial x, s
-        cdef Beta t
+        cdef Beta t, z
+
+        zvalue = self.Znode.value
+        zcompl = 1.- zvalue
+        zcompl_pn = 1.
+        q0 = 0.3
+        q1 = 0.4
+        q2 = 0.3
 
         if self.value[0]:
             pr0 = 1.
             for x, t, s in self.in_edges:
                 if s.value[0]:
-                    pr0 *= 1. - t.value * x.value[1]
-            pr0 = (1. - pr0)
-            likelihood = pr0
+                    zcompl_pn *= zcompl
+                    pr0 *= (1. - t.value * x.value[1]) * zvalue
+            pr0 = (1. - pr0) * (1. - zcompl_pn) + zcompl_pn * q0
+            likelihood = pr0 
 
         elif self.value[2]:
             pr0 = 1.
             pr2 = 1.
             for x, t, s in self.in_edges:
                 if s.value[2]:
-                    pr2 *= 1. - t.value * x.value[1]
+                    zcompl_pn *= zcompl
+                    pr2 *= (1. - t.value * x.value[1]) * zvalue
                 elif s.value[0]:
-                    pr0 *= 1. - t.value * x.value[1]
-            pr2 = (pr0 - pr2*pr0)
+                    zcompl_pn *= zcompl
+                    pr0 *= (1. - t.value * x.value[1]) * zvalue
+            pr2 = (pr0 - pr2*pr0) * (1. - zcompl_pn) + zcompl_pn * q2
             likelihood = pr2
 
         else:
             pr1 = 1.
             for x, t, s in self.in_edges:
                 if not s.value[1]:
-                    pr1 *= 1. - t.value * x.value[1]
+                    zcompl_pn *= zcompl
+                    pr1 *= (1. - t.value * x.value[1]) * zvalue
+            pr1 = pr1 * (1. - zcompl_pn) + zcompl_pn * q1
             likelihood = pr1
         
-        return likelihood * 0.997 + 0.001
+        return likelihood #* 0.997 + 0.001
 
 
     cpdef double get_loglikelihood(self):

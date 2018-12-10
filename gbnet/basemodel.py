@@ -145,13 +145,18 @@ class BaseModel(object):
         if len(gelman_rubin) == 0:
             return False
 
+        threshold = 1.15
+
+        tot = len(gelman_rubin)
+        non = len(gelman_rubin[gelman_rubin>threshold])
+        
         max_gr = gelman_rubin.max()
         
-        if max_gr < 1.15:
+        if max_gr < threshold:
             print("\nChains have converged")
             return True
         else:
-            print(f"\nFailed to converge. "
+            print(f"\nFailed to converge. {non} out of {tot} parameters above {threshold}. "
                   f"Gelman-Rubin statistics was {max_gr: 7.4} "
                   f"for parameter {gelman_rubin.idxmax()}")
             return False
