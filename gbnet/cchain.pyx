@@ -47,7 +47,7 @@ cdef class Chain:
         # this will run in multiprocessing job, so we need to reset seed
         np.random.seed()
                 
-        updt_interval = max(1, N*0.0001)
+        updt_interval = max(1, N*0.2)
         steps_until_updt = updt_interval
 
         # define the random number generator
@@ -59,13 +59,13 @@ cdef class Chain:
         cdef RandomVariableNode node
 
         for i in range(N):
-            steps_until_updt -= 1
             if not steps_until_updt:
                 if run_sampled_count is not None:
                     run_sampled_count[self.id] += updt_interval
                 elif not quiet:
                     print("\rChain {} - Progress {: 7.2%}".format(self.id, i/N), end="")
                 steps_until_updt = updt_interval
+            steps_until_updt -= 1
 
             steps_until_thin -= 1
             update_stats = steps_until_thin < 1
