@@ -81,7 +81,7 @@ class ORNORModel(BaseModel):
             if reltype != 'unknown':
                 try:
                     if rel['is_trrust']:
-                        Sprior = np.array([0.49, 0.02, 0.49])
+                        Sprior = np.array([0.4, 0.2, 0.4])
                     elif rel['is_chipatlas']:
                         Sprior = np.array([0.2, 0.6, 0.2])
                 except KeyError:
