@@ -82,11 +82,11 @@ class ORNORModel(BaseModel):
                 try:
                     if rel['is_trrust']:
                         if rel['type'] == 'increase':
-                            Sprior = np.array([0.0, 0.4, 0.6])
+                            Sprior = np.array([0.0, 0.8, 0.2])
                         elif rel['type'] == 'decrease':
-                            Sprior = np.array([0.6, 0.4, 0.0])
+                            Sprior = np.array([0.2, 0.8, 0.0])
                         else:
-                            Sprior = np.array([0.3, 0.4, 0.3])
+                            Sprior = np.array([0.2, 0.6, 0.2])
                     elif rel['is_chipatlas']:
                         Sprior = np.array([0.2, 0.6, 0.2])
                 except KeyError:
