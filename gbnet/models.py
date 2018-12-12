@@ -47,7 +47,7 @@ class ORNORModel(BaseModel):
                 X1prior = self.xpriors[src]
                 X0prior = 1. - X1prior
             except KeyError:
-                X0prior = 0.90
+                X0prior = 0.80
                 X1prior = 1. - X0prior
             Xnodes[src] = Multinomial('X', src, np.array([X0prior, X1prior]))
 
@@ -81,7 +81,12 @@ class ORNORModel(BaseModel):
             if reltype != 'unknown':
                 try:
                     if rel['is_trrust']:
-                        Sprior = np.array([0.4, 0.2, 0.4])
+                        if rel['type'] == 'increase':
+                            Sprior = np.array([0.0, 0.4, 0.6])
+                        elif rel['type'] == 'decrease':
+                            Sprior = np.array([0.6, 0.4, 0.0])
+                        else:
+                            Sprior = np.array([0.3, 0.4, 0.3])
                     elif rel['is_chipatlas']:
                         Sprior = np.array([0.2, 0.6, 0.2])
                 except KeyError:
