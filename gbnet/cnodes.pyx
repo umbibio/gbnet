@@ -273,8 +273,8 @@ cdef class Noise(RandomVariableNode):
 
 
     def __init__(self, name, uid, a=0.0050, b=0.0005):
-        self.a = Beta('a', 0, 1, 200, value=a, r_clip=0.5)
-        self.b = Beta('b', 0, 1, 2000, value=b, r_clip=0.5)
+        self.a = Beta('a', 0, 1/(1-a), 1/a, value=a, r_clip=0.5)
+        self.b = Beta('b', 0, 1/(1-b), 1/b, value=b, r_clip=0.5)
         self.table = np.eye(3, dtype=float)
         self.update()
 
