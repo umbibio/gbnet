@@ -22,11 +22,11 @@ class ORNORModel(BaseModel):
 
         Znodes = {}
 
-        mean = 0.0001
+        mean = 0.05
         Zprior_a, Zprior_b = 1/(1-mean),1/mean
         Znodes[0] = Beta('Z', 0, Zprior_a, Zprior_b, value=mean)
 
-        mean = 0.9999
+        mean = 0.95
         Zprior_a, Zprior_b = 1/(1-mean),1/mean
         Znodes[1] = Beta('Z', 1, Zprior_a, Zprior_b, value=mean)
 
@@ -41,6 +41,16 @@ class ORNORModel(BaseModel):
             noiseNode.b.children.append(Ynodes[trg])
             noiseNode.children.append(Ynodes[trg])
 
+            if Ynodes[trg].value[1]:
+                # target not diff exp, less likely to be regulated?
+                Znod = Znodes[0]
+            else:
+                # Sprior = np.array([0.005, 0.990, 0.005])
+                Znod = Znodes[1]
+
+            Znod.children.append(Ynodes[trg])
+            Ynodes[trg].set_Znode(Znod)
+
         Xnodes, Tnodes = {}, {}
         for src in X_list:
             try:
@@ -52,11 +62,10 @@ class ORNORModel(BaseModel):
             Xnodes[src] = Multinomial('X', src, np.array([X0prior, X1prior]))
 
             try:
-                Tprior_a, Tprior_b = self.tpriors[src]
-                Tprior_a, Tprior_b = min(Tprior_a, 20), min(Tprior_b, 20)
+                mean = self.tpriors[src]
             except KeyError:
                 mean = 0.90
-                Tprior_a, Tprior_b = 1/(1-mean),1/mean
+            Tprior_a, Tprior_b = 1/(1-mean),1/mean
             Tnodes[src] = Beta('T', src, Tprior_a, Tprior_b, value=mean)
 
         Snodes = {}
@@ -64,41 +73,30 @@ class ORNORModel(BaseModel):
             
             src, trg = edg
 
-            if Ynodes[trg].value[1]:
-                # target not diff exp, less likely to be regulated?
-                # Sprior = np.array([0.0005, 0.9990, 0.0005])
-                Znod = Znodes[0]
-            else:
-                # Sprior = np.array([0.005, 0.990, 0.005])
-                Znod = Znodes[1]
-
+            # fixed prior if no extra info available
             Sprior = np.array([0.2, 0.6, 0.2])
-            try:
-                reltype = rel['type']
-            except KeyError:
-                reltype = 'unknown'
+            mor = rel['type']
 
-            if reltype != 'unknown':
-                try:
-                    if rel['is_trrust']:
-                        if rel['type'] == 'increase':
-                            Sprior = np.array([0.0, 0.8, 0.2])
-                        elif rel['type'] == 'decrease':
-                            Sprior = np.array([0.2, 0.8, 0.0])
-                        else:
-                            Sprior = np.array([0.2, 0.6, 0.2])
-                    elif rel['is_chipatlas']:
-                        Sprior = np.array([0.2, 0.6, 0.2])
-                except KeyError:
-                    pass
+            if type(mor) == str:
+                if mor.lower() in ['increase', 'activation', 'up', '+']:
+                    mor = 1
+                elif mor.lower() in ['decrease', 'inhibition', 'repression', 'down', '-']:
+                    mor = -1
+
+            if type(mor) == float or type(mor) == int:
+                if mor > 0.5:
+                    Sprior = np.array([0.0, 0.4, 0.6])
+                elif mor < -0.5:
+                    Sprior = np.array([0.6, 0.4, 0.0])
             
             try:
                 # overwrite S prior if one was provided
-                priorA = rel['prior']
-                if priorA > 0:
-                    priorI = 1. - priorA
-
-                    Sprior = np.array([priorA/2., priorI, priorA/2.])
+                priorMOR = rel['prior']
+                if priorMOR > 0:
+                    Sprior = np.array([(1. - priorMOR)*0.25, (1. - priorMOR)*0.75, priorMOR])
+                elif priorMOR < 0:
+                    priorMOR = abs(priorMOR)
+                    Sprior = np.array([priorMOR, (1. - priorMOR)*0.75, (1. - priorMOR)*0.25])
 
             except KeyError:
                 pass
@@ -108,9 +106,6 @@ class ORNORModel(BaseModel):
             
             Xnodes[src].children.append(Ynodes[trg])
             Tnodes[src].children.append(Ynodes[trg])
-            Znod.children.append(Ynodes[trg])
-
-            Ynodes[trg].set_Znode(Znod)
             
             Ynodes[trg].in_edges.append([Xnodes[src], Tnodes[src], Snodes[edg]])
 
