@@ -211,7 +211,7 @@ cdef class ORNOR_YLikelihood(Multinomial):
             for x, t, s in self.in_edges:
                 if s.value[0]:
                     zcompl_pn *= zcompl
-                    pr0 *= (1. - t.value * x.value[1]) # * zvalue
+                    pr0 *= (1. - t.value * x.value[1]) * zvalue
                 elif s.value[2]:
                     zcompl_pn *= zcompl
             pr0 = (1. - pr0) * (1. - zcompl_pn) + zcompl_pn * q0
@@ -223,10 +223,10 @@ cdef class ORNOR_YLikelihood(Multinomial):
             for x, t, s in self.in_edges:
                 if s.value[2]:
                     zcompl_pn *= zcompl
-                    pr2 *= (1. - t.value * x.value[1]) # * zvalue
+                    pr2 *= (1. - t.value * x.value[1]) * zvalue
                 elif s.value[0]:
                     zcompl_pn *= zcompl
-                    pr0 *= (1. - t.value * x.value[1]) # * zvalue
+                    pr0 *= (1. - t.value * x.value[1]) * zvalue
             pr2 = (pr0 - pr2*pr0) * (1. - zcompl_pn) + zcompl_pn * q2
             likelihood = pr2
 
@@ -235,7 +235,7 @@ cdef class ORNOR_YLikelihood(Multinomial):
             for x, t, s in self.in_edges:
                 if not s.value[1]:
                     zcompl_pn *= zcompl
-                    pr1 *= (1. - t.value * x.value[1]) # * zvalue
+                    pr1 *= (1. - t.value * x.value[1]) * zvalue
             pr1 = pr1 * (1. - zcompl_pn) + zcompl_pn * q1
             likelihood = pr1
         

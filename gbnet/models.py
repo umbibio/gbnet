@@ -22,11 +22,11 @@ class ORNORModel(BaseModel):
 
         Znodes = {}
 
-        mean = 0.05
+        mean = 0.005
         Zprior_a, Zprior_b = 1/(1-mean),1/mean
         Znodes[0] = Beta('Z', 0, Zprior_a, Zprior_b, value=mean)
 
-        mean = 0.95
+        mean = 0.995
         Zprior_a, Zprior_b = 1/(1-mean),1/mean
         Znodes[1] = Beta('Z', 1, Zprior_a, Zprior_b, value=mean)
 
@@ -74,7 +74,7 @@ class ORNORModel(BaseModel):
             src, trg = edg
 
             # fixed prior if no extra info available
-            Sprior = np.array([0.2, 0.6, 0.2])
+            Sprior = np.array([0.15, 0.70, 0.15])
             mor = rel['type']
 
             if type(mor) == str:
@@ -85,9 +85,9 @@ class ORNORModel(BaseModel):
 
             if type(mor) == float or type(mor) == int:
                 if mor > 0.5:
-                    Sprior = np.array([0.0, 0.4, 0.6])
+                    Sprior = np.array([0.05, 0.70, 0.25])
                 elif mor < -0.5:
-                    Sprior = np.array([0.6, 0.4, 0.0])
+                    Sprior = np.array([0.25, 0.70, 0.05])
             
             try:
                 # overwrite S prior if one was provided
