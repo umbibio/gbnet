@@ -2,3 +2,4 @@ build
 dist
 *.c
 *.egg-info
+settings.json
