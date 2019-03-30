@@ -22,11 +22,11 @@ class ORNORModel(BaseModel):
 
         Znodes = {}
 
-        mean = 0.005
+        mean = 0.0001
         Zprior_a, Zprior_b = 1/(1-mean),1/mean
         Znodes[0] = Beta('Z', 0, Zprior_a, Zprior_b, value=mean)
 
-        mean = 0.995
+        mean = 0.9999
         Zprior_a, Zprior_b = 1/(1-mean),1/mean
         Znodes[1] = Beta('Z', 1, Zprior_a, Zprior_b, value=mean)
 
