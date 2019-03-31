@@ -45,7 +45,6 @@ class ORNORModel(BaseModel):
                 # target not diff exp, less likely to be regulated?
                 Znod = Znodes[0]
             else:
-                # Sprior = np.array([0.005, 0.990, 0.005])
                 Znod = Znodes[1]
 
             Znod.children.append(Ynodes[trg])

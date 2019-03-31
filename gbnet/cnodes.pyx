@@ -202,9 +202,11 @@ cdef class ORNOR_YLikelihood(Multinomial):
         zvalue = self.Znode.value
         zcompl = 1.- zvalue
         zcompl_pn = 1.
-        q0 = 0.3
-        q1 = 0.4
-        q2 = 0.3
+
+        # deg dependant, TODO: compute this values from input deg file
+        q0 = 0.0147
+        q1 = 0.9606
+        q2 = 0.0247
 
         if self.value[0]:
             pr0 = 1.
