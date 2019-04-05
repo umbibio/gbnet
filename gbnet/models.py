@@ -84,9 +84,9 @@ class ORNORModel(BaseModel):
 
             if type(mor) == float or type(mor) == int:
                 if mor > 0.5:
-                    Sprior = np.array([0.05, 0.70, 0.25])
+                    Sprior = np.array([0.02, 0.70, 0.28])
                 elif mor < -0.5:
-                    Sprior = np.array([0.25, 0.70, 0.05])
+                    Sprior = np.array([0.28, 0.70, 0.02])
             
             try:
                 # overwrite S prior if one was provided
