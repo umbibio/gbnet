@@ -40,7 +40,7 @@ cdef class Chain:
 
 
 
-    def sample(self, N, run_sampled_count=None, thin=1, quiet=True):
+    def sample(self, N, run_sampled_count=None, thin=1, quiet=True, getstats=False):
 
         steps_until_thin = thin
 
@@ -98,3 +98,6 @@ cdef class Chain:
             print(f"\rChain {self.id} - Sampling completed")
         if run_sampled_count is not None:
             run_sampled_count[self.id] = N
+
+        if getstats:
+            return self.stats
