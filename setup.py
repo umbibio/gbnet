@@ -30,8 +30,7 @@ setuptools.setup(
     author="Argenis Arriojas",
     author_email="arriojasmaldonado001@umb.edu",
     description=(
-        'A Bayesian Networks approach for infering active Transcription Factors '
-        'using logic models of transcriptional regulation'),
+        'A Bayesian Networks approach for infering active Transcription Factors using logic models of transcriptional regulation'),
     long_description=long_description,
     long_description_content_type="text/markdown",
     url='https://github.com/umbibio/gbnet',
