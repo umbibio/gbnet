@@ -1,6 +1,8 @@
 #cython: language_level=3, boundscheck=False
 import cython
 from cython import sizeof
+from cpython.mem cimport PyMem_Malloc, PyMem_Free
+from libc.string cimport memcpy
 
 from libc.stdlib cimport malloc
 from libc.string cimport strcpy, strlen
@@ -22,8 +24,7 @@ cdef double inf = INFINITY
 
 cdef class RandomVariableNode:
 
-
-    def __init__(self, str name, uid=None):
+    def __init__(self, str name, valSize, uid=None):
 
         if uid is not None:
             self.id = f"{name}__{uid}"
@@ -41,6 +42,42 @@ cdef class RandomVariableNode:
         # For example an interaction X->Y will have
         # corresponding T and S nodes associated only to X
         self.in_edges = []
+
+        self.valSize = valSize
+        self.valsum1 = [0.] * self.valSize
+        self.valsum2 = [0.] * self.valSize
+        self.valN = 0.
+
+    property valsum1:
+        def __get__(self):
+            return [self._valsum1[i] for i in range(self.valSize)]
+
+        def __set__(self, values):
+            self.valSize = len(values)
+            self._valsum1 = <double *> PyMem_Malloc(sizeof(double) * self.valSize)
+            if not self._valsum1:
+                raise MemoryError()
+            for i in range(self.valSize):
+                self._valsum1[i] = values[i]
+
+    property valsum2:
+        def __get__(self):
+            return [self._valsum2[i] for i in range(self.valSize)]
+
+        def __set__(self, values):
+            self.valSize = len(values)
+            self._valsum2 = <double *> PyMem_Malloc(sizeof(double) * self.valSize)
+            if not self._valsum2:
+                raise MemoryError()
+            for i in range(self.valSize):
+                self._valsum2[i] = values[i]
+
+    def burn_stats(self, burn_fraction=1.0):
+        keep_fraction = 1. - burn_fraction
+        self.valN *= keep_fraction
+        for i in range(self.valSize):
+            self._valsum1[i] *= keep_fraction
+            self._valsum2[i] *= keep_fraction
 
     def add_child(self, object elem):
         self.children.append(elem)
@@ -77,18 +114,11 @@ cdef class Multinomial(RandomVariableNode):
         self.value = <unsigned int *> malloc(size * sizeof(unsigned int))
         self.possible_values = <unsigned int *> malloc(size * size * sizeof(unsigned int))
 
-        self.valsum1 = <double *> malloc(size * sizeof(double))
-        self.valsum2 = <double *> malloc(size * sizeof(double))
-        self.valN = 0.
-
-
         cdef unsigned int i, j, v
         for i in range(size):
             self.value[i] = value[i]
             self.prob[i] = p[i]
             self.logprob[i] = log(p[i])
-            self.valsum1[i] = 0.
-            self.valsum2[i] = 0.
             for j in range(size):
                 if i == j:
                     v = 1
@@ -98,8 +128,7 @@ cdef class Multinomial(RandomVariableNode):
 
         self.value_cached = 0
 
-        RandomVariableNode.__init__(self, name, uid)
-
+        RandomVariableNode.__init__(self, name, self.noutcomes, uid)
 
     @property
     def value(self):
@@ -107,21 +136,6 @@ cdef class Multinomial(RandomVariableNode):
             self._value = [self.value[i] for i in range(self.noutcomes)]
             self.value_cached = 1
         return self._value
-
-    @property
-    def valsum1(self):
-        return [self.valsum1[i] for i in range(self.noutcomes)]
-    
-    @property
-    def valsum2(self):
-        return [self.valsum2[i] for i in range(self.noutcomes)]
-
-    def burn_stats(self, burn_fraction=1.0):
-        keep_fraction = 1. - burn_fraction
-        self.valN *= keep_fraction
-        for i in range(self.noutcomes):
-            self.valsum1[i] *= keep_fraction
-            self.valsum2[i] *= keep_fraction
     
     @cython.cdivision(True)
     cdef void get_outcome_probs(self):
@@ -174,8 +188,8 @@ cdef class Multinomial(RandomVariableNode):
         if update_stats:
             self.valN += 1.
             for i in range(self.noutcomes):
-                self.valsum1[i] += <double> self.value[i]
-                self.valsum2[i] += <double> self.value[i] * self.value[i]
+                self._valsum1[i] += <double> self.value[i]
+                self._valsum2[i] += <double> self.value[i] * self.value[i]
 
 
 cdef class ORNOR_YLikelihood(Multinomial):
@@ -280,19 +294,10 @@ cdef class Noise(RandomVariableNode):
         self.table = np.eye(3, dtype=float)
         self.update()
 
-        RandomVariableNode.__init__(self, name, uid)
+        RandomVariableNode.__init__(self, name, 2, uid)
 
         self.parents.append(self.a)
         self.parents.append(self.b)
-
-        self.valsum1 = <double *> malloc(2 * sizeof(double))
-        self.valsum2 = <double *> malloc(2 * sizeof(double))
-        self.valN = 0.
-
-        cdef unsigned int i
-        for i in range(2):
-            self.valsum1[i] = 0.
-            self.valsum2[i] = 0.
 
     def update(self):
         a = self.a.value
@@ -318,23 +323,8 @@ cdef class Noise(RandomVariableNode):
         if update_stats:
             self.valN += 1.
             for i in range(2):
-                self.valsum1[i] += <double> self.value[i]
-                self.valsum2[i] += <double> self.value[i] * self.value[i]
-
-    @property
-    def valsum1(self):
-        return [self.valsum1[i] for i in range(2)]
-    
-    @property
-    def valsum2(self):
-        return [self.valsum2[i] for i in range(2)]
-    
-    def burn_stats(self, burn_fraction=1.0):
-        keep_fraction = 1. - burn_fraction
-        self.valN *= keep_fraction
-        for i in range(2):
-            self.valsum1[i] *= keep_fraction
-            self.valsum2[i] *= keep_fraction
+                self._valsum1[i] += <double> self.value[i]
+                self._valsum2[i] += <double> self.value[i] * self.value[i]
 
     def rvs(self):
         return np.array([self.a.value, self.b.value])
@@ -361,11 +351,6 @@ cdef class Beta(RandomVariableNode):
             self.value = value
         else:
             self.value = self.rvs()
-
-        self.valsum1 = 0.
-        self.valsum2 = 0.
-        self.valN = 0.
-        
 
     @cython.cdivision(True)
     cdef double proposal_norm(self, gsl_rng * rng):
@@ -418,16 +403,8 @@ cdef class Beta(RandomVariableNode):
 
         if update_stats:
             self.valN += 1.
-            self.valsum1 += self.value
-            self.valsum2 += self.value * self.value
-
-
-    def burn_stats(self, burn_fraction=1.0):
-        keep_fraction = 1. - burn_fraction
-        self.valN *= keep_fraction
-        self.valsum1 *= keep_fraction
-        self.valsum2 *= keep_fraction
-
+            self._valsum1[0] += self.value
+            self._valsum2[0] += self.value * self.value
 
     def rvs(self):
         good = False

@@ -5,10 +5,14 @@ cimport numpy as np
 
 cdef class RandomVariableNode:
 
-
     cdef public str id, name
     cdef object uid
     cdef public list parents, children, in_edges
+
+    cdef unsigned int valSize
+    cdef double *_valsum1
+    cdef double *_valsum2
+    cdef public double valN
 
     cdef void sample(self, gsl_rng *rng, bint update_stats)
 
@@ -28,10 +32,6 @@ cdef class Multinomial(RandomVariableNode):
     
     cdef double *pr
 
-    cdef double *valsum1
-    cdef double *valsum2
-    cdef public double valN
-
     cdef void get_outcome_probs(self)
     cdef double get_loglikelihood(self)
     cdef void sample(self, gsl_rng *rng, bint update_stats)
@@ -50,10 +50,6 @@ cdef class Noise(RandomVariableNode):
     cdef public np.ndarray table, value
     cdef public Beta a, b
 
-    cdef double *valsum1
-    cdef double *valsum2
-    cdef public double valN
-
     cdef void sample(self, gsl_rng *rng, bint update_stats)
 
 
@@ -63,8 +59,6 @@ cdef class Beta(RandomVariableNode):
     cdef list params
     cdef public double value
     cdef double a, b
-
-    cdef public double valsum1, valsum2, valN
 
     cdef double proposal_norm(self, gsl_rng * rng)
     cdef double get_loglikelihood(self)
