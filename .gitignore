@@ -3,3 +3,4 @@ dist
 *.c
 *.egg-info
 settings.json
+*.p
