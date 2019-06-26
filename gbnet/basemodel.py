@@ -11,7 +11,7 @@ class BaseModel(object):
 
 
     __slots__ = [
-        'trace', 'chains', 'burn', 'gelman_rubin', 'max_gr', 'vars',
+        'chains', 'gelman_rubin', 'vars',
         '_trace_keys', 'rp', 'ents', 'rels', 'DEG', 'result', 'xpriors',
         'tpriors']
 
@@ -191,38 +191,19 @@ class BaseModel(object):
         if njobs > 1:
             
             chains = len(self.chains)
-            
+
             print(f"\nSampling {chains} chains in {njobs} jobs")
-        
+
             # Want workers to ignore Keyboard interrupt
             original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
             # Create the pool of workers
             pool = Pool(processes=njobs)
             # restore signals for the main process
             signal.signal(signal.SIGINT, original_sigint_handler)
-            
+
             try:
-                manager = Manager()
-                sampled = manager.list([0]*chains)
-                mres = [pool.apply_async(chain.sample, (N, sampled, thin)) for chain in self.chains]
+                mres = [pool.apply_async(chain.sample, (N, None, thin)) for chain in self.chains]
                 pool.close()
-                
-                timer = 90 * 24 * 60 * 60 * 4 # 90 days timeout
-                target_total = N * chains
-                while timer:
-                    time.sleep(1/4)
-                    total_sampled = 0
-                    for count in sampled:
-                        total_sampled += count
-                    progress = total_sampled / target_total
-                    self.rp.report(f"Progress {progress: 7.2%}", schar='\r', lchar='', showlast=False)
-                    if progress == 1:
-                        break
-                    timer -= 1
-                self.rp.report(f"Progress {progress: 7.2%}", schar='\r')
-                
-                if timer <= 0:
-                    raise TimeoutError
 
                 self.chains = [res.get(timeout=3600) for res in mres]
             except KeyboardInterrupt:
@@ -240,3 +221,34 @@ class BaseModel(object):
             for chain in self.chains:
                 chain.sample(N, thin=thin, quiet=False)
         # self.rp.report()
+
+    def __getstate__(self):
+        return (
+            self.chains,
+            self.gelman_rubin,
+            self.vars,
+            self._trace_keys,
+            self.ents,
+            self.rels,
+            self.DEG,
+            self.result,
+            self.xpriors,
+            self.tpriors,
+        )
+
+    def __setstate__(self, state):
+        (
+            self.chains,
+            self.gelman_rubin,
+            self.vars,
+            self._trace_keys,
+            self.ents,
+            self.rels,
+            self.DEG,
+            self.result,
+            self.xpriors,
+            self.tpriors,
+        ) = state
+
+        self.rp = Reporter()
+
