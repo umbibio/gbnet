@@ -188,39 +188,29 @@ class BaseModel(object):
 
     def sample(self, N=200, thin=1, njobs=2):
             
-        if njobs > 1:
-            
-            chains = len(self.chains)
+        chains = len(self.chains)
 
-            print(f"\nSampling {chains} chains in {njobs} jobs")
+        print(f"\nSampling {chains} chains in {njobs} jobs")
 
-            # Want workers to ignore Keyboard interrupt
-            original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
-            # Create the pool of workers
-            pool = Pool(processes=njobs)
-            # restore signals for the main process
-            signal.signal(signal.SIGINT, original_sigint_handler)
+        # Create the pool of workers
+        pool = Pool(processes=njobs)
 
-            try:
-                mres = [pool.apply_async(chain.sample, (N, None, thin)) for chain in self.chains]
-                pool.close()
+        try:
+            mres = [pool.apply_async(chain.sample, (N, None, thin, True)) for chain in self.chains]
+            pool.close()
 
-                self.chains = [res.get(timeout=3600) for res in mres]
-            except KeyboardInterrupt:
-                pool.terminate()
-                print("\n\nCaught KeyboardInterrupt, workers have been terminated\n")
-                raise SystemExit
+            self.chains = [res.get(timeout=3600) for res in mres]
+        except KeyboardInterrupt:
+            pool.terminate()
+            print("\n\nCaught KeyboardInterrupt, workers have been terminated\n")
+            raise SystemExit
 
-            except TimeoutError:
-                pool.terminate()
-                print("\n\nThe workers ran out of time. Terminating simulation.\n")
-                raise SystemExit
-            
-            pool.join()
-        else:
-            for chain in self.chains:
-                chain.sample(N, thin=thin, quiet=False)
-        # self.rp.report()
+        except TimeoutError:
+            pool.terminate()
+            print("\n\nThe workers ran out of time. Terminating simulation.\n")
+            raise SystemExit
+        
+        pool.join()
 
     def __getstate__(self):
         return (

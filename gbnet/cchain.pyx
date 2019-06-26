@@ -1,5 +1,6 @@
 #cython: language_level=3, boundscheck=False
 from libc.time cimport time
+import signal
 
 import numpy as np
 import copy
@@ -39,8 +40,9 @@ cdef class Chain:
                 node.burn_stats(burn_fraction)
 
 
-
     def sample(self, N, run_sampled_count=None, thin=1, quiet=True):
+        # Ignore keyboard interrupt
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
 
         steps_until_thin = thin
 
