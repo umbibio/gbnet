@@ -90,8 +90,8 @@ cdef class Chain:
                         self.stats[f"{node.id}_{i}"]['N'] = node.valN
                 except TypeError:
                     # value is no array, it won't be iterable
-                    self.stats[node.id]['sum1'] = node.valsum1
-                    self.stats[node.id]['sum2'] = node.valsum2
+                    self.stats[node.id]['sum1'] = node.valsum1[0]
+                    self.stats[node.id]['sum2'] = node.valsum2[0]
                     self.stats[node.id]['N'] = node.valN
 
         if not quiet:

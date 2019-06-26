@@ -53,24 +53,70 @@ cdef class RandomVariableNode:
             return [self._valsum1[i] for i in range(self.valSize)]
 
         def __set__(self, values):
-            self.valSize = len(values)
+            assert self.valSize == len(values), "Assigned value doesn't match property size"
             self._valsum1 = <double *> PyMem_Malloc(sizeof(double) * self.valSize)
             if not self._valsum1:
                 raise MemoryError()
             for i in range(self.valSize):
                 self._valsum1[i] = values[i]
 
+    cpdef bytes get_valsum1(self):
+        if self._valsum1 == NULL:
+            return None
+        return <bytes>(<char *>self._valsum1)[:sizeof(double) * self.valSize]
+    
+    cpdef void set_valsum1(self, bytes valsum1):
+        assert self.valSize > 0, "valSize has not been previously specified"
+        PyMem_Free(self._valsum1)
+        self._valsum1 = <double *> PyMem_Malloc(sizeof(double) * self.valSize)
+        if not self._valsum1:
+            raise MemoryError()
+        memcpy(self._valsum1, <char *>valsum1, sizeof(double) * self.valSize)
+
     property valsum2:
         def __get__(self):
             return [self._valsum2[i] for i in range(self.valSize)]
 
         def __set__(self, values):
-            self.valSize = len(values)
+            assert self.valSize == len(values), "Assigned value doesn't match property size"
             self._valsum2 = <double *> PyMem_Malloc(sizeof(double) * self.valSize)
             if not self._valsum2:
                 raise MemoryError()
             for i in range(self.valSize):
                 self._valsum2[i] = values[i]
+
+    cpdef bytes get_valsum2(self):
+        if self._valsum2 == NULL:
+            return None
+        return <bytes>(<char *>self._valsum2)[:sizeof(double) * self.valSize]
+    
+    cpdef void set_valsum2(self, bytes valsum2):
+        assert self.valSize > 0, "valSize has not been previously specified"
+        PyMem_Free(self._valsum2)
+        self._valsum2 = <double *> PyMem_Malloc(sizeof(double) * self.valSize)
+        if not self._valsum2:
+            raise MemoryError()
+        memcpy(self._valsum2, <char *>valsum2, sizeof(double) * self.valSize)
+
+    def __getstate__(self):
+        return (
+            self.id, self.name, self.uid, 
+            self.parents, self.children, self.in_edges,
+            self.valSize, self.get_valsum1(), self.get_valsum2(), self.valN,
+        )
+    
+    def __setstate__(self, state):
+        (
+            self.id, self.name, self.uid, 
+            self.parents, self.children, self.in_edges,
+            self.valSize, tmp_valsum1, tmp_valsum2, self.valN,
+        ) = state
+        self.set_valsum1(tmp_valsum1)
+        self.set_valsum2(tmp_valsum2)
+
+    def __dealloc__(self):
+        PyMem_Free(self._valsum1)
+        PyMem_Free(self._valsum2)
 
     def burn_stats(self, burn_fraction=1.0):
         keep_fraction = 1. - burn_fraction
