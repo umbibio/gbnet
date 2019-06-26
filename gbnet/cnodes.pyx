@@ -380,7 +380,7 @@ cdef class Beta(RandomVariableNode):
 
 
     def __init__(self, name, uid, a, b, value=None, l_clip=0.0, r_clip=1.0, scale=-1.0):
-        RandomVariableNode.__init__(self, name, uid)
+        RandomVariableNode.__init__(self, name, 1, uid)
 
         if scale < 0.0:
             # use the standard deviation of beta distribution
