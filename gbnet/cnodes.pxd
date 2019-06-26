@@ -14,6 +14,11 @@ cdef class RandomVariableNode:
     cdef double *_valsum2
     cdef public double valN
 
+    cpdef bytes get_valsum1(self)
+    cpdef bytes get_valsum2(self)
+    cpdef void set_valsum1(self, bytes valsum1)
+    cpdef void set_valsum2(self, bytes valsum2)
+
     cdef void sample(self, gsl_rng *rng, bint update_stats)
 
 
