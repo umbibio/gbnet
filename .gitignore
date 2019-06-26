@@ -4,3 +4,5 @@ dist
 *.egg-info
 settings.json
 *.p
+*.csv
+*.zip
