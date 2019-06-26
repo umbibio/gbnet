@@ -176,6 +176,47 @@ cdef class Multinomial(RandomVariableNode):
 
         RandomVariableNode.__init__(self, name, self.noutcomes, uid)
 
+    def __getstate__(self):
+        state = super(Multinomial, self).__getstate__()
+        state = state + (
+            [self._value[i] for i in range(self.valSize)], 
+            [self._possible_values[i] for i in range(self.valSize**2)], 
+            [self._prob[i] for i in range(self.valSize)], 
+        )
+        return state
+
+    def __setstate__(self, state):
+        super(Multinomial, self).__setstate__(state[:-3])
+        (
+            tmp_value, 
+            tmp_possible_values, 
+            tmp_prob, 
+        ) = state[-3:]
+        assert len(tmp_value) == len(tmp_prob) == self.valSize, "Wrong array size in assignment"
+        assert len(tmp_possible_values) == self.valSize**2, "Wrong array size in assignment"
+
+        self._value = <unsigned int *>PyMem_Malloc(sizeof(unsigned int) * self.valSize)
+        self._possible_values = <unsigned int *>PyMem_Malloc(sizeof(unsigned int) * self.valSize**2)
+        self._prob = <double *>PyMem_Malloc(sizeof(double) * self.valSize)
+        self._logprob = <double *>PyMem_Malloc(sizeof(double) * self.valSize)
+
+        self._value_buff = <unsigned int *>PyMem_Malloc(sizeof(unsigned int) * self.valSize)
+        self._pr = <double *>PyMem_Malloc(sizeof(double) * self.valSize)
+
+        if (not self._value or not self._possible_values or not self._value_buff or
+            not self._prob or not self._logprob or not self._pr):
+            raise MemoryError()
+
+        for i in range(self.valSize):
+            self._value[i] = tmp_value[i]
+            for j in range(self.valSize):
+                self._possible_values[i*self.valSize + j] = tmp_possible_values[i*self.valSize + j]
+            self._prob[i] = tmp_prob[i]
+            self._logprob[i] = log(tmp_prob[i])
+
+        self.noutcomes = self.valSize
+        self.value_is_cached = 0
+
     @property
     def value(self):
         if not self.value_is_cached:
@@ -239,6 +280,20 @@ cdef class Multinomial(RandomVariableNode):
 
 
 cdef class ORNOR_YLikelihood(Multinomial):
+
+    def __getstate__(self):
+        state = super(ORNOR_YLikelihood, self).__getstate__()
+        state = state + (
+            self.Znode,
+        )
+        return state
+
+    def __setstate__(self, state):
+        super(ORNOR_YLikelihood, self).__setstate__(state[:-1])
+        (
+            self.Znode,
+        ) = state[-1:]
+
 
     @property
     def prob(self):
@@ -346,6 +401,21 @@ cdef class Noise(RandomVariableNode):
         self.parents.append(self.a)
         self.parents.append(self.b)
 
+    def __getstate__(self):
+        state = super(Noise, self).__getstate__()
+        state = state + (
+            self.table, self.value, 
+            self.a, self.b,
+        )
+        return state
+
+    def __setstate__(self, state):
+        super(Noise, self).__setstate__(state[:-4])
+        (
+            self.table, self.value, 
+            self.a, self.b,
+        ) = state[-4:]
+
     def update(self):
         a = self.a.value
         b = self.b.value
@@ -354,7 +424,7 @@ cdef class Noise(RandomVariableNode):
         self.table[1] = [         a, 1. - 2 * a,          a]
         self.table[2] = [         b,          a, 1. - a - b]
 
-        self.value = np.array([self.a.value, self.b.value])
+        self.value = np.array([a, b])
 
 
     cdef void sample(self, gsl_rng *rng, bint update_stats):
@@ -374,7 +444,8 @@ cdef class Noise(RandomVariableNode):
                 self._valsum2[i] += <double> self.value[i] * self.value[i]
 
     def rvs(self):
-        return np.array([self.a.value, self.b.value])
+        return self.value
+
 
 cdef class Beta(RandomVariableNode):
 
@@ -398,6 +469,21 @@ cdef class Beta(RandomVariableNode):
             self.value = value
         else:
             self.value = self.rvs()
+
+    def __getstate__(self):
+        state = super(Beta, self).__getstate__()
+        state = state + (
+            self.l_clip, self.r_clip, self.scale,
+            self.params, self.value, self.a, self.b, 
+        )
+        return state
+
+    def __setstate__(self, state):
+        super(Beta, self).__setstate__(state[:-7])
+        (
+            self.l_clip, self.r_clip, self.scale,
+            self.params, self.value, self.a, self.b, 
+        ) = state[-7:]
 
     @cython.cdivision(True)
     cdef double proposal_norm(self, gsl_rng * rng):
