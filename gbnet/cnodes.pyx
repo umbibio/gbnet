@@ -151,38 +151,38 @@ cdef class Multinomial(RandomVariableNode):
 
         self.noutcomes = size
 
-        self.value_buff = <unsigned int *> malloc(size * sizeof(unsigned int))
-        self.pr = <double *> malloc(size * sizeof(double))
+        self._value_buff = <unsigned int *> malloc(size * sizeof(unsigned int))
+        self._pr = <double *> malloc(size * sizeof(double))
 
-        self.prob = <double *> malloc(size * sizeof(double))
-        self.logprob = <double *> malloc(size * sizeof(double))
+        self._prob = <double *> malloc(size * sizeof(double))
+        self._logprob = <double *> malloc(size * sizeof(double))
         
-        self.value = <unsigned int *> malloc(size * sizeof(unsigned int))
-        self.possible_values = <unsigned int *> malloc(size * size * sizeof(unsigned int))
+        self._value = <unsigned int *> malloc(size * sizeof(unsigned int))
+        self._possible_values = <unsigned int *> malloc(size * size * sizeof(unsigned int))
 
         cdef unsigned int i, j, v
         for i in range(size):
-            self.value[i] = value[i]
-            self.prob[i] = p[i]
-            self.logprob[i] = log(p[i])
+            self._value[i] = value[i]
+            self._prob[i] = p[i]
+            self._logprob[i] = log(p[i])
             for j in range(size):
                 if i == j:
                     v = 1
                 else:
                     v = 0
-                self.possible_values[i*size + j] = v
+                self._possible_values[i*size + j] = v
 
-        self.value_cached = 0
+        self.value_is_cached = 0
 
         RandomVariableNode.__init__(self, name, self.noutcomes, uid)
 
     @property
     def value(self):
-        if not self.value_cached:
-            self._value = [self.value[i] for i in range(self.noutcomes)]
-            self.value_cached = 1
-        return self._value
-    
+        if not self.value_is_cached:
+            self._cache_value = [self._value[i] for i in range(self.noutcomes)]
+            self.value_is_cached = 1
+        return self._cache_value
+
     @cython.cdivision(True)
     cdef void get_outcome_probs(self):
 
@@ -193,25 +193,25 @@ cdef class Multinomial(RandomVariableNode):
 
         cdef unsigned int i, j
         for i in range(size):
-            self.value_buff[i] = self.value[i]
+            self._value_buff[i] = self._value[i]
 
         for i in range(size):
             for j in range(size):
-                self.value[j] = self.possible_values[i*size + j]
+                self._value[j] = self._possible_values[i*size + j]
             llik = self.get_loglikelihood()
             lik = exp(llik)
-            self.pr[i] = lik
+            self._pr[i] = lik
             sum_lik += lik
 
         if sum_lik > 0:
             for i in range(size):
-                self.pr[i] = self.pr[i] / sum_lik
+                self._pr[i] = self._pr[i] / sum_lik
         else:
             for i in range(size):
-                self.pr[i] = self.prob[i]
+                self._pr[i] = self._prob[i]
 
         for i in range(size):
-            self.value[i] = self.value_buff[i]
+            self._value[i] = self._value_buff[i]
 
     
     cdef double get_loglikelihood(self):
@@ -221,7 +221,7 @@ cdef class Multinomial(RandomVariableNode):
 
         for node in self.children:
             loglik += node.get_loglikelihood()
-        loglik += gsl_ran_multinomial_lnpdf(self.noutcomes, self.prob, self.value)
+        loglik += gsl_ran_multinomial_lnpdf(self.noutcomes, self._prob, self._value)
         
         return loglik
 
@@ -229,13 +229,13 @@ cdef class Multinomial(RandomVariableNode):
     cdef void sample(self, gsl_rng *rng, bint update_stats):
         self.get_outcome_probs()
         cdef unsigned int N = 1
-        gsl_ran_multinomial(rng, self.noutcomes, N, self.pr, self.value)
-        self.value_cached = 0
+        gsl_ran_multinomial(rng, self.noutcomes, N, self._pr, self._value)
+        self.value_is_cached = 0
         if update_stats:
             self.valN += 1.
             for i in range(self.noutcomes):
-                self._valsum1[i] += <double> self.value[i]
-                self._valsum2[i] += <double> self.value[i] * self.value[i]
+                self._valsum1[i] += <double> self._value[i]
+                self._valsum2[i] += <double> self._value[i] * self._value[i]
 
 
 cdef class ORNOR_YLikelihood(Multinomial):
@@ -243,13 +243,13 @@ cdef class ORNOR_YLikelihood(Multinomial):
     @property
     def prob(self):
         cdef unsigned int i
-        return [self.prob[i] for i in range(self.noutcomes)]
+        return [self._prob[i] for i in range(self.noutcomes)]
 
     @prob.setter
     def prob(self, np.ndarray[double, ndim=1] value):
         cdef unsigned int i
         for i in range(self.noutcomes):
-            self.prob[i] = value[i]
+            self._prob[i] = value[i]
 
     def set_Znode(self, node):
         self.Znode = node
@@ -268,7 +268,7 @@ cdef class ORNOR_YLikelihood(Multinomial):
         q1 = 0.8
         q2 = 0.2
 
-        if self.value[0]:
+        if self._value[0]:
             pr0 = 1.
             for x, t, s in self.in_edges:
                 if s.value[0]:
@@ -279,7 +279,7 @@ cdef class ORNOR_YLikelihood(Multinomial):
             pr0 = (1. - pr0) * (1. - zcompl_pn) + zcompl_pn * q0
             likelihood = pr0 
 
-        elif self.value[2]:
+        elif self._value[2]:
             pr0 = 1.
             pr2 = 1.
             for x, t, s in self.in_edges:
@@ -310,19 +310,20 @@ cdef class ORNOR_YLikelihood(Multinomial):
 
         cdef unsigned int i, j
         for i in range(size):
-            self.value_buff[i] = self.value[i]
-        
+            self._value_buff[i] = self._value[i]
+
         cdef double likelihood = 0.
         for i in range(size):
             for j in range(size):
-                self.value[j] = self.possible_values[i*size + j]
-            likelihood += self.get_model_likelihood() * self.prob[i]
+                self._value[j] = self._possible_values[i*size + j]
+
+            likelihood += self.get_model_likelihood() * self._prob[i]
 
         for i in range(size):
-            self.value[i] = self.value_buff[i]
+            self._value[i] = self._value_buff[i]
 
         # penalize if this target gene wasn't differentially expressed
-        # likelihood *= 1. - self.value[1]*0.9999
+        # likelihood *= 1. - self._value[1]*0.9999
 
         return log(likelihood)
 

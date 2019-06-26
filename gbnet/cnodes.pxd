@@ -24,18 +24,18 @@ cdef class RandomVariableNode:
 
 cdef class Multinomial(RandomVariableNode):
 
-    cdef bint value_cached
-    cdef list _value
+    cdef bint value_is_cached
+    cdef list _cache_value
 
-    cdef unsigned int *value
-    cdef unsigned int *possible_values
-    cdef double *prob
-    cdef double *logprob
+    cdef unsigned int *_value
+    cdef unsigned int *_possible_values
+    cdef double *_prob
+    cdef double *_logprob
     cdef unsigned int noutcomes
     
-    cdef unsigned int *value_buff
+    cdef unsigned int *_value_buff
     
-    cdef double *pr
+    cdef double *_pr
 
     cdef void get_outcome_probs(self)
     cdef double get_loglikelihood(self)
