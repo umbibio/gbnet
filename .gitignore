@@ -6,3 +6,4 @@ settings.json
 *.p
 *.csv
 *.zip
+__pycache__
