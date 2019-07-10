@@ -60,6 +60,7 @@ cdef class Chain:
 
         cdef RandomVariableNode node
 
+        cdef unsigned int i
         for i in range(N):
             if not steps_until_updt:
                 if run_sampled_count is not None:
@@ -83,15 +84,13 @@ cdef class Chain:
         
         for vardict in self.vars.values():
             for node in vardict.values():
-                try:
-                    # if node is multinomial, value will be a numpy array
-                    # have to set a list for each element in 'value'
-                    for i, val in enumerate(node.value):
+                if node.valSize > 1:
+                    for i in range(node.valSize):
                         self.stats[f"{node.id}_{i}"]['sum1'] = node.valsum1[i]
                         self.stats[f"{node.id}_{i}"]['sum2'] = node.valsum2[i]
                         self.stats[f"{node.id}_{i}"]['N'] = node.valN
-                except TypeError:
-                    # value is no array, it won't be iterable
+                else:
+                    # value is no array
                     self.stats[node.id]['sum1'] = node.valsum1[0]
                     self.stats[node.id]['sum2'] = node.valsum2[0]
                     self.stats[node.id]['N'] = node.valN

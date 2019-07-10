@@ -147,6 +147,8 @@ cdef class Multinomial(RandomVariableNode):
         if not value.shape[0]:
             value = np.random.multinomial(1, p).astype(np.int32)
 
+        self.value_idx = np.argwhere(value)[0, 0]
+
         cdef unsigned int size = p.shape[0]
 
         self.noutcomes = size
@@ -157,7 +159,7 @@ cdef class Multinomial(RandomVariableNode):
         self._prob = <double *> malloc(size * sizeof(double))
         self._logprob = <double *> malloc(size * sizeof(double))
         
-        self._value = <unsigned int *> malloc(size * sizeof(unsigned int))
+        self._value = self._value_buff
         self._possible_values = <unsigned int *> malloc(size * size * sizeof(unsigned int))
 
         cdef unsigned int i, j, v
@@ -172,7 +174,8 @@ cdef class Multinomial(RandomVariableNode):
                     v = 0
                 self._possible_values[i*size + j] = v
 
-        self.value_is_cached = 0
+        self._cache_value = [self._value[i] for i in range(self.noutcomes)]
+        self.value_is_cached = 1
 
         RandomVariableNode.__init__(self, name, self.noutcomes, uid)
 
@@ -195,12 +198,12 @@ cdef class Multinomial(RandomVariableNode):
         assert len(tmp_value) == len(tmp_prob) == self.valSize, "Wrong array size in assignment"
         assert len(tmp_possible_values) == self.valSize**2, "Wrong array size in assignment"
 
-        self._value = <unsigned int *>PyMem_Malloc(sizeof(unsigned int) * self.valSize)
+        self._value_buff = <unsigned int *>PyMem_Malloc(sizeof(unsigned int) * self.valSize)
+        self._value = self._value_buff
         self._possible_values = <unsigned int *>PyMem_Malloc(sizeof(unsigned int) * self.valSize**2)
         self._prob = <double *>PyMem_Malloc(sizeof(double) * self.valSize)
         self._logprob = <double *>PyMem_Malloc(sizeof(double) * self.valSize)
 
-        self._value_buff = <unsigned int *>PyMem_Malloc(sizeof(unsigned int) * self.valSize)
         self._pr = <double *>PyMem_Malloc(sizeof(double) * self.valSize)
 
         if (not self._value or not self._possible_values or not self._value_buff or
@@ -215,14 +218,9 @@ cdef class Multinomial(RandomVariableNode):
             self._logprob[i] = log(tmp_prob[i])
 
         self.noutcomes = self.valSize
-        self.value_is_cached = 0
+        self._cache_value = [self._value[i] for i in range(self.noutcomes)]
+        self.value_is_cached = 1
 
-    @property
-    def value(self):
-        if not self.value_is_cached:
-            self._cache_value = [self._value[i] for i in range(self.noutcomes)]
-            self.value_is_cached = 1
-        return self._cache_value
 
     @cython.cdivision(True)
     cdef void get_outcome_probs(self):
@@ -233,12 +231,9 @@ cdef class Multinomial(RandomVariableNode):
         cdef double sum_lik = 0
 
         cdef unsigned int i, j
-        for i in range(size):
-            self._value_buff[i] = self._value[i]
 
         for i in range(size):
-            for j in range(size):
-                self._value[j] = self._possible_values[i*size + j]
+            self._value = &self._possible_values[i*size]
             llik = self.get_loglikelihood()
             lik = exp(llik)
             self._pr[i] = lik
@@ -251,8 +246,7 @@ cdef class Multinomial(RandomVariableNode):
             for i in range(size):
                 self._pr[i] = self._prob[i]
 
-        for i in range(size):
-            self._value[i] = self._value_buff[i]
+        self._value = self._value_buff
 
     
     cdef double get_loglikelihood(self):
@@ -364,18 +358,14 @@ cdef class ORNOR_YLikelihood(Multinomial):
         cdef unsigned int size = self.noutcomes
 
         cdef unsigned int i, j
-        for i in range(size):
-            self._value_buff[i] = self._value[i]
 
         cdef double likelihood = 0.
         for i in range(size):
-            for j in range(size):
-                self._value[j] = self._possible_values[i*size + j]
+            self._value = &self._possible_values[i*size]
 
             likelihood += self.get_model_likelihood() * self._prob[i]
 
-        for i in range(size):
-            self._value[i] = self._value_buff[i]
+        self._value = self._value_buff
 
         # penalize if this target gene wasn't differentially expressed
         # likelihood *= 1. - self._value[1]*0.9999
@@ -434,7 +424,7 @@ cdef class Noise(RandomVariableNode):
         self.update()
         
         for Ynod in self.children:
-            y_prob = self.table[:, np.argwhere(Ynod.value)[0, 0]]
+            y_prob = self.table[:, Ynod.value_idx]
             Ynod.prob = y_prob
 
         if update_stats:

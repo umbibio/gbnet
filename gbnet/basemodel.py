@@ -119,12 +119,12 @@ class BaseModel(object):
             self._trace_keys = []
             for vardict in self.vars.values():
                 for node in vardict.values():
-                    try:
+                    if node.valSize > 1:
                         # if node is multinomial, value will be a numpy array
                         # have to set a list for each element in 'value'
-                        for i in range(len(node.value)):
+                        for i in range(node.valSize):
                             self._trace_keys.append(f"{node.id}_{i}")
-                    except TypeError:
+                    else:
                         # value is no array, it won't have Attribute 'size'
                         self._trace_keys.append(node.id)
         return self._trace_keys

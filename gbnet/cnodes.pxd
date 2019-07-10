@@ -9,7 +9,7 @@ cdef class RandomVariableNode:
     cdef object uid
     cdef public list parents, children, in_edges
 
-    cdef unsigned int valSize
+    cdef public unsigned int valSize
     cdef double *_valsum1
     cdef double *_valsum2
     cdef public double valN
@@ -29,6 +29,7 @@ cdef class Multinomial(RandomVariableNode):
 
     cdef unsigned int *_value
     cdef unsigned int *_possible_values
+    cdef public unsigned int value_idx
     cdef double *_prob
     cdef double *_logprob
     cdef unsigned int noutcomes

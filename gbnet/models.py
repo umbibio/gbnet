@@ -41,7 +41,7 @@ class ORNORModel(BaseModel):
             noiseNode.b.children.append(Ynodes[trg])
             noiseNode.children.append(Ynodes[trg])
 
-            if Ynodes[trg].value[1]:
+            if Ynodes[trg].value_idx == 1:
                 # target not diff exp, less likely to be regulated?
                 Znod = Znodes[0]
             else:
