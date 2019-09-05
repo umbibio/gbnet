@@ -1,12 +1,43 @@
 # distutils: language = c++
 
 from ModelORNOR cimport *
+import pandas as pd
 # from cysignals.signals cimport sig_check
 
 cdef class PyModelORNOR:
     cdef ModelORNOR *c_model  # Hold a C++ instance which we're wrapping
 
-    def __cinit__(self, dict network_py, dict evidence_py = {}, set active_tf_set_py = set(), unsigned int n_graphs = 3):
+    def __cinit__(self, ents, rels, evid = None, set active_tf_set_py = set(), unsigned int n_graphs = 3):
+
+        # Make sure the indices are appropriate
+        assertion_msg = ("Please make sure that provided ents file is a "
+                         "Pandas Dataframe with column 'uid' available")
+        # for ents
+        ents = ents[["uid", "name"]].dropna()
+        if 'uid' in ents.columns:
+            ents = ents.set_index('uid')
+        assert ents.index.name == 'uid', assertion_msg
+
+        # now build network
+        rels["srcsymbol"] = ents.loc[rels.srcuid, "name"].values
+        rels["trgsymbol"] = ents.loc[rels.trguid, "name"].values
+        src_set = set(rels["srcsymbol"].values)
+        trg_set = set(rels["trgsymbol"].values)
+        network_py = {(src, trg):mor for src, trg, mor in rels[["srcsymbol", "trgsymbol", "type"]].values}
+
+        # for DEG
+        assertion_msg = ("Please make sure that provided DEG file is either a "
+                         "dictionary or a Pandas Series with uids as keys/index")
+        if isinstance(evid, pd.DataFrame):
+            assert 'uid' in evid.columns, assertion_msg
+            evid = evid[["uid", "val"]].dropna()
+            evid["symbol"] = ents.loc[evid.uid, "name"].values
+            evid = evid[evid["symbol"].isin(trg_set)]
+            evidence_py = dict(zip(evid["symbol"].values, evid["val"].values))
+        elif evid is None:
+            evidence_py = {}
+        else:
+            raise TypeError("Input DEG evidence must be a DataFrame object")
 
         cdef src_trg_pair_t src_trg
         cdef network_edge_t network_edge
