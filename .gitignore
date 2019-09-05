@@ -2,4 +2,6 @@ build
 dist
 *.c
 *.egg-info
+gbnet/*.cpp
+gbnet/*.so
 settings.json
