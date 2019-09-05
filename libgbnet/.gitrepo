@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/git-commands/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/umbibio/libgbnet.git
+	branch = master
+	commit = fe549712914ef67d7d5f8c3bd37506a98db7828c
+	parent = de737602d88f8ad77b50803f0f9a50296426fcd6
+	method = merge
+	cmdver = 0.4.0
