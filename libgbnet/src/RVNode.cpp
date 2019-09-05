@@ -30,8 +30,7 @@ namespace gbn
         this->uid = uid;
         this->id = name;
 
-        // if(uid != "")
-            this->id += "_" + uid;
+        this->id += "_" + uid;
 
         // this->histogram = new gsl_histogram * [this->var_size];
         if(this->is_discrete) {
@@ -75,6 +74,8 @@ namespace gbn
 
     double RVNode::get_own_likelihood ()
     {
+        /* This is a virtual method. Derived class must implement its
+        correct behaviour */
         return 1.;
     }
 
@@ -85,6 +86,8 @@ namespace gbn
 
     double RVNode::get_children_loglikelihood ()
     {
+        /* This is a virtual method. Derived class must implement its
+        correct behaviour */
         return 0.;
     }
 
@@ -104,13 +107,14 @@ namespace gbn
 
     void RVNode::sample(gsl_rng * rng, bool update_stats)
     {
+        /* This is a virtual method. Derived class must implement its
+        correct behaviour */
         return;
     }
 
     double RVNode::mean(unsigned int i)
     {
         return gsl_rstat_mean(this->stats[i]);
-        
     }
 
     double RVNode::variance(unsigned int i)
