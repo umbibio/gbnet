@@ -3,30 +3,31 @@ import setuptools
 from Cython.Build import cythonize
 from Cython.Distutils import Extension
 from Cython.Distutils import build_ext
-import numpy
-import cython_gsl
-
+from glob import glob
 
 libs = {
-    'libraries': cython_gsl.get_libraries(),
-    'library_dirs': [cython_gsl.get_library_dir()],
-    'include_dirs': [
-        cython_gsl.get_cython_include_dir(),
-        numpy.get_include(),
-    ]
+    'libraries': ['gsl', 'gslcblas', 'm'],
+    'include_dirs': ['libgbnet/include']
 }
 
-extensions = [
-        Extension("gbnet.cchain", ["gbnet/cchain.pyx"], **libs),
-        Extension("gbnet.cnodes", ["gbnet/cnodes.pyx"], **libs),
-]
+args = {
+    'extra_compile_args': ['-fopenmp'],
+    'extra_link_args': ['-fopenmp']
+}
+
+all_lib = [ext for ext in glob('libgbnet/include/*.h')]
+all_cpp = [ext for ext in glob('libgbnet/src/*.cpp')]
+all_dep = all_lib + all_cpp
+
+extensions = [ Extension("gbnet.ModelORNOR", ["gbnet/ModelORNOR.pyx"]+all_cpp, depends=all_dep, language="c++", **libs, **args)]
+
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name = 'gbnet',
-    version='0.1.dev1',
+    version='0.2.dev1',
     author="Argenis Arriojas",
     author_email="arriojasmaldonado001@umb.edu",
     description=(
