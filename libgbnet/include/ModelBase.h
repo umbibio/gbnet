@@ -38,7 +38,7 @@ namespace gbn
             gelman_rubin_vector_t get_gelman_rubin();
             double get_max_gelman_rubin();
 
-            void sample(unsigned int = 50000, unsigned int = 10);
+            void sample(unsigned int = 50000, unsigned int = 30);
             void sample_n(unsigned int);
             void burn_stats();
 
