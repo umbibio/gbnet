@@ -6,7 +6,7 @@
 [subrepo]
 	remote = git@github.com:umbibio/libgbnet.git
 	branch = master
-	commit = dd9ef832e13b86251aaa4f76da76088cb6970526
-	parent = adfdd16a741850808c02950d83e7665d1a050a54
+	commit = 293659eac29ffc6c19e1a5ba418c887513cc1d9c
+	parent = 34047af7db5dbdec35ab7cec4ad7ee92aa0194ce
 	method = merge
 	cmdver = 0.4.0
