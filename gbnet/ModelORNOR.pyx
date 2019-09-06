@@ -69,7 +69,7 @@ cdef class PyModelORNOR:
     def get_max_gelman_rubin(self):
         return self.c_model.get_max_gelman_rubin()
 
-    def sample(self, unsigned int N = 50000, unsigned int deltaN = 10):
+    def sample(self, unsigned int N = 50000, unsigned int deltaN = 30):
         self.c_model.sample(N, deltaN)
         return
 
