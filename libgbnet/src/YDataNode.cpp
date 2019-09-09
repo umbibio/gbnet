@@ -25,21 +25,6 @@ namespace gbn
 
     double YDataNode::get_own_likelihood ()
     {
-        unsigned int delta = abs((int)this->hidden_truth->value - (int)this->value);
-
-        double lik;
-        switch (this->value)
-        {
-        case 1:
-            lik = delta == 0 ? 1. - 2. * this->noise_value[1] : this->noise_value[1];
-            lik = std::max(0., lik);
-            break;
-        
-        default:
-            lik = this->noise_value[delta];
-            break;
-        }
-
-        return lik;
+        return this->noise[this->hidden_truth->value][this->value];
     }
 }

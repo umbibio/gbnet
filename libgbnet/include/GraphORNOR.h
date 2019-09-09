@@ -41,11 +41,14 @@ namespace gbn
                                         {0.0, 0.01, 0.99}};
             double YPROB[3] = {0.05, 0.90, 0.05};
             double YNOISE[3] = {0.945, 0.05, 0.005};
+            const double YNOISE_ALPHA[3][3] = {{2000,  100,   10},
+                                               { 100, 2000,  100},
+                                               {  10,  100, 2000}};
 
             ~GraphORNOR () override;
             GraphORNOR (unsigned int);
 
-            void build_structure (network_t, evidence_dict_t, prior_active_tf_set_t) override;
+            void build_structure (network_t, evidence_dict_t, prior_active_tf_set_t, bool = true);
     };
 }
 

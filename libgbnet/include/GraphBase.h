@@ -48,8 +48,6 @@ namespace gbn
             GraphBase (unsigned int);
             virtual ~GraphBase ();
 
-            virtual void build_structure (network_t, evidence_dict_t, prior_active_tf_set_t);
-
             void sample (unsigned int);
             void burn_stats();
             void print_stats();

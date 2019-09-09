@@ -21,8 +21,9 @@ namespace gbn
         protected:
 
         public:
-            // Future: want to use these values for incluencing own likelihood
-            double pvalue, abslogfc, *noise_value;
+            // Future: want to use these values for influencing own likelihood
+            double pvalue, abslogfc;
+            double *noise [3];
 
             HNode * hidden_truth;
             // YNoiseNode * noise;

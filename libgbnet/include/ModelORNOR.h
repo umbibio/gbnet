@@ -22,11 +22,11 @@ namespace gbn
         public:
             ModelORNOR();
             ~ModelORNOR() override;
-            ModelORNOR(const network_t, const evidence_dict_t, unsigned int = 3);
-            ModelORNOR(const network_t, const prior_active_tf_set_t, unsigned int = 3);
-            ModelORNOR(const network_t, const evidence_dict_t, const prior_active_tf_set_t, unsigned int = 3);
+            ModelORNOR(const network_t, const evidence_dict_t, unsigned int = 3, bool = true);
+            ModelORNOR(const network_t, const prior_active_tf_set_t, unsigned int = 3, bool = true);
+            ModelORNOR(const network_t, const evidence_dict_t, const prior_active_tf_set_t, unsigned int = 3, bool = true);
 
-            void build_graphs();
+            void build_graphs(bool = true);
     };
 }
 

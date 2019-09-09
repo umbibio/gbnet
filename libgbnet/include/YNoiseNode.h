@@ -17,12 +17,11 @@ namespace gbn
         protected:
 
         public:
-            const double noise_alpha[3] = {2000, 100, 10};
             std::vector<YDataNode *> children;
             bool listen_children = true;
 
             ~YNoiseNode () override;
-            YNoiseNode (gsl_rng *);
+            YNoiseNode (unsigned int, const double *, gsl_rng *);
             double get_children_loglikelihood () override;
     };
 }

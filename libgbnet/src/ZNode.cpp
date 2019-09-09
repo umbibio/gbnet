@@ -16,9 +16,10 @@ namespace gbn
     {
         double loglik = 0.;
 
-        if (this->listen_children)
+        if (this->listen_children) {
             for (auto child: this->children)
                 loglik += child->get_own_loglikelihood();
+        }
 
         return loglik;
     }

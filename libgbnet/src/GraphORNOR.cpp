@@ -15,7 +15,8 @@ namespace gbn
     void GraphORNOR::build_structure (
         network_t interaction_network, 
         evidence_dict_t evidence,
-        prior_active_tf_set_t active_tf_set
+        prior_active_tf_set_t active_tf_set,
+        bool noise_listen_children
     ) {
         // This means that evidence will be sampled from the graph, given the set of active TF
         bool is_simulation = evidence.size() == 0;
@@ -46,7 +47,7 @@ namespace gbn
 
         // Theta
         TNode * T = new TNode((std::string) "", 50., 2., this->rng);
-        T->listen_children = true;
+        T->listen_children = noise_listen_children;
         this->random_nodes.push_back(T);
 
         // One X for each TF
@@ -69,16 +70,19 @@ namespace gbn
         }
 
         ZNode * Z0 = new ZNode((std::string) "0", 1., 200., 0.005);
-        Z0->listen_children = true;
+        Z0->listen_children = noise_listen_children;
         this->random_nodes.push_back(Z0);
         ZNode * Z1 = new ZNode((std::string) "1", 200., 1., 0.995);
-        Z1->listen_children = true;
+        Z1->listen_children = noise_listen_children;
         this->random_nodes.push_back(Z1);
 
-        // One Noise node: Dirichlet K=3
-        YNoiseNode * Noise = new YNoiseNode(this->rng);
-        this->random_nodes.push_back(Noise);
-        Noise->listen_children = false;
+        // Noise node: 3 rv Dirichlet K=3
+        YNoiseNode * Noise[3];
+        for (unsigned int i = 0; i < 3; i++) {
+            Noise[i] = new YNoiseNode(i, this->YNOISE_ALPHA[i], this->rng);
+            this->random_nodes.push_back(Noise[i]);
+            Noise[i]->listen_children = noise_listen_children;
+        }
         /* After testing this out it seems like this Noise node yields too easily, and shifts
         its values towards high error rates, crippling the effect of the observed data
         on the graphical model. Hence I am choosing to make this a hyperparameter, that doesn't
@@ -94,8 +98,10 @@ namespace gbn
                 H->tvalue = &T->value;
                 H->zvalue = &Z1->value;
                 Y = new YDataNode(H);
-                Y->noise_value = Noise->value;
-                Noise->children.push_back(Y);
+                for (unsigned int i = 0; i < 3; i++) {
+                    Y->noise[i] = Noise[i]->value;
+                    Noise[i]->children.push_back(Y);
+                }
                 // Y->noise_value = this->YNOISE; // use this when skipping Noise nodes
 
                 H->is_latent = false;
@@ -131,8 +137,10 @@ namespace gbn
                     deg = 1; // 1 -> not DEG
 
                 Y = new YDataNode(uid, this->YPROB, deg);
-                Y->noise_value = Noise->value;
-                Noise->children.push_back(Y);
+                for (unsigned int i = 0; i < 3; i++) {
+                    Y->noise[i] = Noise[i]->value;
+                    Noise[i]->children.push_back(Y);
+                }
                 // Y->noise_value = this->YNOISE; // use this when skipping Noise nodes
 
                 H = new HNodeORNOR(Y);

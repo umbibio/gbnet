@@ -7,7 +7,7 @@ import pandas as pd
 cdef class PyModelORNOR:
     cdef ModelORNOR *c_model  # Hold a C++ instance which we're wrapping
 
-    def __cinit__(self, ents, rels, evid = None, set active_tf_set_py = set(), unsigned int n_graphs = 3):
+    def __cinit__(self, ents, rels, evid = None, set active_tf_set_py = set(), unsigned int n_graphs = 3, bint noise_listen_children = True):
 
         # Make sure the indices are appropriate
         assertion_msg = ("Please make sure that provided ents file is a "
@@ -56,11 +56,11 @@ cdef class PyModelORNOR:
             active_tf_set.insert(src_uid.encode('utf8'))
 
         if len(evidence_py) > 0 and len(active_tf_set_py) > 0:
-            self.c_model = new ModelORNOR(network, evidence, active_tf_set, n_graphs)
+            self.c_model = new ModelORNOR(network, evidence, active_tf_set, n_graphs, noise_listen_children)
         elif len(evidence_py) > 0:
-            self.c_model = new ModelORNOR(network, evidence, n_graphs)
+            self.c_model = new ModelORNOR(network, evidence, n_graphs, noise_listen_children)
         elif len(active_tf_set_py) > 0:
-            self.c_model = new ModelORNOR(network, active_tf_set, n_graphs)
+            self.c_model = new ModelORNOR(network, active_tf_set, n_graphs, noise_listen_children)
 
     def get_gelman_rubin(self):
         gr_list = self.c_model.get_gelman_rubin()

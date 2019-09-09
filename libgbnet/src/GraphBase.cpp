@@ -19,11 +19,6 @@ namespace gbn
         // std::cout << "Object at " << this << " destroyed, instance of  GraphBase\t" << std::endl;
     }
 
-    void GraphBase::build_structure(
-        network_t interaction_network, 
-        evidence_dict_t evidence,
-        prior_active_tf_set_t active_tf_set) {}
-
     void GraphBase::sample(unsigned int N)
     {
         for (unsigned int i = 0; i < N; i++) {
