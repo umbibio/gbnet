@@ -32,7 +32,7 @@ namespace gbn
 
             std::vector<GraphBase *> graphs;
 
-            ModelBase();
+            ModelBase(unsigned int = 3);
             virtual ~ModelBase();
 
             gelman_rubin_vector_t get_gelman_rubin();

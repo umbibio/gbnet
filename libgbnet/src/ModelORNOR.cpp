@@ -13,7 +13,7 @@ namespace gbn
     ModelORNOR::ModelORNOR(
         const network_t network, const evidence_dict_t evidence,
         unsigned int n_graphs, bool noise_listen_children
-    ) : ModelBase() {
+    ) : ModelBase(n_graphs) {
         this->network = network;
         this->evidence = evidence;
         this->build_graphs(noise_listen_children);
@@ -22,7 +22,7 @@ namespace gbn
     ModelORNOR::ModelORNOR(
         const network_t network, const prior_active_tf_set_t active_tf_set, 
         unsigned int n_graphs, bool noise_listen_children
-    ) : ModelBase() {
+    ) : ModelBase(n_graphs) {
         this->network = network;
         this->active_tf_set = active_tf_set;
         this->build_graphs(noise_listen_children);
@@ -31,7 +31,7 @@ namespace gbn
     ModelORNOR::ModelORNOR(
         const network_t network, const evidence_dict_t evidence, const prior_active_tf_set_t active_tf_set, 
         unsigned int n_graphs, bool noise_listen_children
-    ) : ModelBase() {
+    ) : ModelBase(n_graphs) {
         this->network = network;
         this->evidence = evidence;
         this->active_tf_set = active_tf_set;

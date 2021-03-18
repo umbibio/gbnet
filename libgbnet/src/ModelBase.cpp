@@ -34,8 +34,9 @@ void setSignal(int pSignal)
 
 namespace gbn
 {
-    ModelBase::ModelBase()
+    ModelBase::ModelBase(unsigned int n_graphs)
     {
+        this->n_graphs = n_graphs;
         std::signal(SIGINT, signalHandler);
         clearSignal();
     }
