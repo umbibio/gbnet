@@ -124,9 +124,9 @@ namespace gbn
             }
             // Now use that for Y and H nodes prior probabilities
             // take into account all target genes present in network
-            this->YPROB[0] = deg_counts[0] / trg_uid.size();
-            this->YPROB[2] = deg_counts[2] / trg_uid.size();
-            this->YPROB[1] = 1. - this->YPROB[0] - this->YPROB[2];
+            this->YPROB[0] = (double) deg_counts[0] / trg_uid.size();
+            this->YPROB[2] = (double) deg_counts[2] / trg_uid.size();
+            this->YPROB[1] = (double) 1. - this->YPROB[0] - this->YPROB[2];
 
             // Finally initialize Y and H nodes
             for (auto uid: trg_uid) {
