@@ -165,7 +165,7 @@ namespace gbn
             tie(src, trg) = src_trg_pair;
             X = (XNode *) x_dictionary.find_node(src);
             H = (HNodeORNOR *) h_dictionary.find_node(trg);
-            std::string s_id = X->uid + "-" + H->uid;
+            std::string s_id = X->uid + "-->" + H->uid;
 
             unsigned int mor_idx = (unsigned int) (mor + 1);
             if (is_simulation) {
