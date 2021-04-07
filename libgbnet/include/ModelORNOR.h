@@ -15,18 +15,20 @@
 
 namespace gbn
 {
+
     class ModelORNOR: public ModelBase
     {
         private:
         protected:
+            double sprior[3 * 3];
         public:
             ModelORNOR();
             ~ModelORNOR() override;
-            ModelORNOR(const network_t, const evidence_dict_t, unsigned int = 3, bool = true);
-            ModelORNOR(const network_t, const prior_active_tf_set_t, unsigned int = 3, bool = true);
-            ModelORNOR(const network_t, const evidence_dict_t, const prior_active_tf_set_t, unsigned int = 3, bool = true);
+            ModelORNOR(const network_t, const evidence_dict_t, const prior_active_tf_set_t = prior_active_tf_set_t(),
+                       const double [3 * 3] = gbn::SPRIOR,
+                       unsigned int = 3, bool = true);
 
-            void build_graphs(bool = true);
+            void build_graphs();
     };
 }
 

@@ -25,9 +25,8 @@ cdef extern from "../libgbnet/include/ModelORNOR.h" namespace "gbn":
 
     cdef cppclass ModelORNOR:
         ModelORNOR() except +
-        ModelORNOR( const network_t, const evidence_dict_t, unsigned int, bint) except +
-        ModelORNOR( const network_t, const prior_active_tf_set_t, unsigned int, bint) except +
-        ModelORNOR( const network_t, const evidence_dict_t, const prior_active_tf_set_t, unsigned int, bint) except +
+        ModelORNOR( const network_t, const evidence_dict_t, const prior_active_tf_set_t,
+                    double [9], unsigned int, bint) except +
         gelman_rubin_vector_t get_gelman_rubin()
         double get_max_gelman_rubin()
         void sample(unsigned int, unsigned int)

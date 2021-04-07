@@ -1,13 +1,18 @@
 # distutils: language = c++
 
-from ModelORNOR cimport *
+from cpython cimport array
+import array
+from gbnet.ModelORNOR cimport *
 import pandas as pd
+import numpy as np
 # from cysignals.signals cimport sig_check
 
 cdef class PyModelORNOR:
     cdef ModelORNOR *c_model  # Hold a C++ instance which we're wrapping
 
-    def __cinit__(self, ents, rels, evid = None, set active_tf_set_py = set(), unsigned int n_graphs = 3, bint noise_listen_children = True):
+    def __cinit__(self, ents, rels, evid = None, set active_tf_set_py = set(),
+                  sprior = None,
+                  unsigned int n_graphs = 3, bint noise_listen_children = True):
 
         # Make sure the indices are appropriate
         assertion_msg = ("Please make sure that provided ents file is a "
@@ -19,6 +24,7 @@ cdef class PyModelORNOR:
         assert ents.index.name == 'uid', assertion_msg
 
         # now build network
+        # rels = rels.copy()
         rels["srcsymbol"] = ents.loc[rels.srcuid, "name"].values
         rels["trgsymbol"] = ents.loc[rels.trguid, "name"].values
         src_set = set(rels["srcsymbol"].values)
@@ -28,16 +34,20 @@ cdef class PyModelORNOR:
         # for DEG
         assertion_msg = ("Please make sure that provided DEG file is either a "
                          "dictionary or a Pandas Series with uids as keys/index")
-        if isinstance(evid, pd.DataFrame):
-            assert 'uid' in evid.columns, assertion_msg
-            evid = evid[["uid", "val"]].dropna()
+        if evid is not None:
+            if isinstance(evid, pd.DataFrame):
+                assert 'uid' in evid.columns, assertion_msg
+                evid = evid[["uid", "val"]].dropna()
+            elif isinstance(evid, dict):
+                evid = pd.DataFrame([dict(uid=k, val=v) for k, v in evid.items()]).dropna()
+            else:
+                raise TypeError(assertion_msg)
+
             evid["symbol"] = ents.loc[evid.uid, "name"].values
             evid = evid[evid["symbol"].isin(trg_set)]
             evidence_py = dict(zip(evid["symbol"].values, evid["val"].values))
-        elif evid is None:
-            evidence_py = {}
         else:
-            raise TypeError("Input DEG evidence must be a DataFrame object")
+            evidence_py = {}
 
         cdef src_trg_pair_t src_trg
         cdef network_edge_t network_edge
@@ -54,13 +64,19 @@ cdef class PyModelORNOR:
         cdef prior_active_tf_set_t active_tf_set = prior_active_tf_set_t()
         for src_uid in active_tf_set_py:
             active_tf_set.insert(src_uid.encode('utf8'))
+        
+        if sprior is None:
+            sprior_py = [0.40, 0.40, 0.20,
+                         0.30, 0.40, 0.30,
+                         0.20, 0.40, 0.40]
+        else:
+            sprior = np.array(sprior)
+            assert sprior.shape == (3, 3)
+            assert (sprior.sum(axis=1) == 1).all()
+            sprior_py = sprior.flatten().tolist()
 
-        if len(evidence_py) > 0 and len(active_tf_set_py) > 0:
-            self.c_model = new ModelORNOR(network, evidence, active_tf_set, n_graphs, noise_listen_children)
-        elif len(evidence_py) > 0:
-            self.c_model = new ModelORNOR(network, evidence, n_graphs, noise_listen_children)
-        elif len(active_tf_set_py) > 0:
-            self.c_model = new ModelORNOR(network, active_tf_set, n_graphs, noise_listen_children)
+        cdef double[9] c_sprior = array.array('d', sprior_py)
+        self.c_model = new ModelORNOR(network, evidence, active_tf_set, c_sprior, n_graphs, noise_listen_children)
 
     def get_gelman_rubin(self):
         gr_list = self.c_model.get_gelman_rubin()

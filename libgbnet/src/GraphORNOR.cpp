@@ -4,19 +4,15 @@
 namespace gbn
 {
 
-    GraphORNOR::GraphORNOR(unsigned int seed)
-    : GraphBase(seed) {}
-
-    GraphORNOR::~GraphORNOR()
-    {
-        // std::cout << "Object at " << this << " destroyed, instance of  GraphORNOR\t" << std::endl;
-    }
+    GraphORNOR::GraphORNOR(unsigned int seed) : GraphBase(seed) {}
+    GraphORNOR::~GraphORNOR() {}
 
     void GraphORNOR::build_structure (
         network_t interaction_network, 
         evidence_dict_t evidence,
         prior_active_tf_set_t active_tf_set,
-        bool noise_listen_children
+        bool noise_listen_children,
+        const double SPRIOR[3 * 3]
     ) {
         // This means that evidence will be sampled from the graph, given the set of active TF
         bool is_simulation = evidence.size() == 0;
@@ -169,10 +165,10 @@ namespace gbn
 
             unsigned int mor_idx = (unsigned int) (mor + 1);
             if (is_simulation) {
-                S = new SNode(s_id, this->SPROB[mor_idx], mor_idx);
+                S = new SNode(s_id, &SPRIOR[mor_idx * 3], mor_idx);
                 this->norand_nodes.push_back(S);
             } else {
-                S = new SNode(s_id, this->SPROB[mor_idx], this->rng);
+                S = new SNode(s_id, &SPRIOR[mor_idx * 3], this->rng);
                 this->random_nodes.push_back(S);
             }
 

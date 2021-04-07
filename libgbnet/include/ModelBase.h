@@ -29,6 +29,7 @@ namespace gbn
             evidence_dict_t evidence = evidence_dict_t();
             prior_active_tf_set_t active_tf_set = prior_active_tf_set_t();
             unsigned int n_graphs = 3;
+            bool noise_listen_children = false;
 
             std::vector<GraphBase *> graphs;
 

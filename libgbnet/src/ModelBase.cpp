@@ -124,8 +124,8 @@ namespace gbn
             this->sample_n(dN);
 
         clearSignal();
-        std::cout << "Drawed " << n << " samples" << std::endl;
-        std::cout << "Max Gelman-Rubin statistics is " << gr << std::endl << std::endl;
+        std::cout << "Drawed " << n << " samples. ";
+        std::cout << "Max Gelman-Rubin statistics is " << gr << std::endl;
     }
 
     void ModelBase::sample_n(unsigned int N)

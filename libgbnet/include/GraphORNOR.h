@@ -28,14 +28,17 @@
 
 namespace gbn
 {
-    
+    const double SPRIOR[3 * 3] = {0.40, 0.40, 0.20,
+                                  0.30, 0.40, 0.30,
+                                  0.20, 0.40, 0.40};
+
     class GraphORNOR: public GraphBase
     {
         private:
         protected:
         public:
             const double XPROB[2] = {0.99, 0.01};
-            const double XPROB_ACTIVE[2] = {0.00, 1.00};
+            const double XPROB_ACTIVE[2] = {0.10, 1.90};
             const double SPROB[3][3] = {{0.99, 0.01, 0.0},
                                         {0.005, 0.99, 0.005},
                                         {0.0, 0.01, 0.99}};
@@ -45,10 +48,11 @@ namespace gbn
                                                { 100, 2000,  100},
                                                {  10,  100, 2000}};
 
-            ~GraphORNOR () override;
             GraphORNOR (unsigned int);
+            virtual ~GraphORNOR ();
 
-            void build_structure (network_t, evidence_dict_t, prior_active_tf_set_t, bool = true);
+            void build_structure (network_t, evidence_dict_t, prior_active_tf_set_t, bool = true,
+                                  const double [3 * 3] = SPRIOR);
     };
 }
 

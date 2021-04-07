@@ -36,6 +36,7 @@ namespace gbn
 
         if (this->is_latent) {
             likelihood = 0.;
+            unsigned int current_value = this->value;
             for (unsigned int i = 0; i < this->n_outcomes; i++)
             {
                 // iterate over possible values to compute 
@@ -43,6 +44,7 @@ namespace gbn
                 this->value = i;
                 likelihood += this->get_model_likelihood();
             }
+            this->value = current_value;
         } else {
             likelihood = this->get_model_likelihood();
         }
