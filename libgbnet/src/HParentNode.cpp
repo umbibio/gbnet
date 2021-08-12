@@ -8,6 +8,6 @@ namespace gbn
     }
 
     void HParentNode::append_h_child (HNode * h) {
-        this->children.push_back(h);
+        this->children.insert(h);
     }
 }

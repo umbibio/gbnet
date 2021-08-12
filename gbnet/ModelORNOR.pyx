@@ -11,8 +11,12 @@ cdef class PyModelORNOR:
     cdef ModelORNOR *c_model  # Hold a C++ instance which we're wrapping
 
     def __cinit__(self, ents, rels, evid = None, set active_tf_set_py = set(),
-                  sprior = None,
-                  unsigned int n_graphs = 3, bint noise_listen_children = True):
+                  sprior = None, z_alpha = 25., z_beta = 25., z0_alpha = None, z0_beta = None, t_alpha = 2., t_beta = 2.,
+                  unsigned int n_graphs = 3, bint noise_listen_children = True, bint comp_yprob = False, bint const_params = False, unsigned int x_mode = 1,
+                  double t_focus = 2., double t_lmargin = 2., double t_hmargin = 2., double zn_focus = 2., double zn_lmargin = 8., double zn_hmargin = 2.):
+
+        z0_alpha = z_alpha if z0_alpha is None else z0_alpha
+        z0_beta = z_beta if z0_beta is None else z0_beta
 
         # Make sure the indices are appropriate
         assertion_msg = ("Please make sure that provided ents file is a "
@@ -76,7 +80,7 @@ cdef class PyModelORNOR:
             sprior_py = sprior.flatten().tolist()
 
         cdef double[9] c_sprior = array.array('d', sprior_py)
-        self.c_model = new ModelORNOR(network, evidence, active_tf_set, c_sprior, n_graphs, noise_listen_children)
+        self.c_model = new ModelORNOR(network, evidence, active_tf_set, c_sprior, z_alpha, z_beta, z0_alpha, z0_beta, t_alpha, t_beta, n_graphs, noise_listen_children, comp_yprob, const_params, t_focus, t_lmargin, t_hmargin, zn_focus, zn_lmargin, zn_hmargin)
 
     def get_gelman_rubin(self):
         gr_list = self.c_model.get_gelman_rubin()

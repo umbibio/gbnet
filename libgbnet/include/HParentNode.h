@@ -2,7 +2,7 @@
 #define GBNET_HPARENTNODE
 
 
-#include <vector>
+#include <set>
 #include "HNode.h"
 
 
@@ -15,7 +15,8 @@ namespace gbn
         protected:
 
         public:
-            std::vector<HNode *> children;
+            std::set<HNode *> children;
+            unsigned int n_h_child = 0;
 
             HParentNode();
             virtual ~HParentNode();

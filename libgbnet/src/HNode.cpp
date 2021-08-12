@@ -42,7 +42,7 @@ namespace gbn
                 // iterate over possible values to compute 
                 // make sure we preserve current value by the end of this loop
                 this->value = i;
-                likelihood += this->get_model_likelihood();
+                likelihood += this->get_model_likelihood() * this->data->get_own_likelihood();
             }
             this->value = current_value;
         } else {

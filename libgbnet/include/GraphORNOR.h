@@ -43,7 +43,9 @@ namespace gbn
                                         {0.005, 0.99, 0.005},
                                         {0.0, 0.01, 0.99}};
             double YPROB[3] = {0.05, 0.90, 0.05};
-            double YNOISE[3] = {0.945, 0.05, 0.005};
+            double YNOISE[3][3] = {{0.945, 0.050, 0.005},
+                                   {0.050, 0.900, 0.050},
+                                   {0.005, 0.050, 0.945}};
             const double YNOISE_ALPHA[3][3] = {{2000,  100,   10},
                                                { 100, 2000,  100},
                                                {  10,  100, 2000}};
@@ -52,7 +54,8 @@ namespace gbn
             virtual ~GraphORNOR ();
 
             void build_structure (network_t, evidence_dict_t, prior_active_tf_set_t, bool = true,
-                                  const double [3 * 3] = SPRIOR);
+                                  const double [3 * 3] = SPRIOR, double z_alpha = 25., double z_beta = 25., double z0_alpha = 25., double z0_beta = 25., double t_alpha = 25., double t_beta = 25., bool comp_yprob = true, bool const_params = false,
+                                  double t_focus = 2., double t_lmargin = 2., double t_hmargin = 2., double zn_focus = 2., double zn_lmargin = 8., double zn_hmargin = 2.);
     };
 }
 
