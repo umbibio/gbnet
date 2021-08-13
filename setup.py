@@ -61,7 +61,9 @@ setuptools.setup(
         "Programming Language :: Python :: 3 :: Only",
         "Topic :: Scientific/Engineering :: Bio-Informatics",
     ],
-
+    entry_points = {
+        'console_scripts': ['gbn-ornor-inference=gbnet.commands.ornor_inference:main'],
+    },
     cmdclass = {'build_ext': build_ext},
     ext_modules = cythonize(extensions, annotate=False, language_level=3),
     install_requires=['numpy', 'pandas', 'psutil', 'num2words'],
