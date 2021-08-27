@@ -112,7 +112,7 @@ def sample_model(model, ents, tests, max_its=100, burn_its=3, verbosity=0):
             max_val = df.val.max()
             params = np.array([v[-1] for v in model.get_posterior_means('Z')] + [v[-1] for v in model.get_posterior_means('T')])
             print(f"[{datetime.now()}] {mgr=: 10.4f}. {gt_est=}, {max_val=:.6f}, {params=}", flush=True)
-        if it >= max_its:
+        if it >= max_its // 2:
             break
 
     model.burn_stats()
