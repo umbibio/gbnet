@@ -24,16 +24,19 @@ def main():
     parser.add_argument('--z0_alpha', type=float, default=200.)
     parser.add_argument('--z0_beta', type=float, default=1.)
 
+    parser.add_argument('--max_its', type=int, default=1000)
+
     params = vars(parser.parse_args())
 
     ents = pd.read_csv(params['ents'])
     rels = pd.read_csv(params['rels'])
     evid = pd.read_csv(params['evid'])
     out_path = params['out']
-    del(params['ents'], params['rels'], params['evid'], params['out'])
+    max_its = params['max_its']
+    del(params['ents'], params['rels'], params['evid'], params['out'], params['max_its'])
 
     tests = get_tests(evid, rels)
     model = get_model(ents, rels, evid, **params)
-    result = sample_model(model, ents, tests, burn_its=5, max_its=1000, verbosity=1)
+    result = sample_model(model, ents, tests, burn_its=5, max_its=max_its, verbosity=1)
 
     result.to_csv(out_path)
