@@ -4,7 +4,7 @@ dist
 *.egg-info
 gbnet/*.cpp
 gbnet/*.so
-settings.json
+*.json
 *.p
 *.csv
 *.zip
