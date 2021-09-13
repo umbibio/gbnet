@@ -46,6 +46,6 @@ def main():
 
     tests = get_tests(evid, rels)
     model = get_model(ents, rels, evid, **params)
-    result = sample_model(model, ents, tests, burn_its=5, max_its=max_its, verbosity=1)
+    result = sample_model(model, ents, tests, burn_its=10, max_its=max_its, verbosity=1)
 
     result.to_csv(out_path)
