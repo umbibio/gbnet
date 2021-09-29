@@ -5,9 +5,12 @@ import time
 
 import numpy as np
 import pandas as pd
+from scipy.stats import gamma
 from num2words import num2words
 
-def genData(NX=3, num_active_tfs=2, NY=50, AvgNTF=0.5):
+from gbnet.utils import get_tests
+
+def genData(NX=3, active_tfs=[], num_active_tfs=2, NY=50, AvgNTF=0.5, a=0.05, b=0.005):
     # Start generating simulated data
     # The TFs: Number of TF and activation state of each
 
@@ -25,69 +28,63 @@ def genData(NX=3, num_active_tfs=2, NY=50, AvgNTF=0.5):
         num_edges = min(num_edges, len(Xgt))
 
         # pick random TFs
-        for src in np.random.choice(list(Xgt.keys()), size=num_edges, replace=False):
+        choices = list(Xgt.keys())
+        x = np.array([i / NX for i in range(NX)])
+        probs = gamma.pdf(x, 1, 0, 0.2)
+        probs /= probs.sum()
+        for src in np.random.choice(choices, size=num_edges, replace=False, p=probs):
             # here an edge can be upregulator (1), downregulator (-1) or not valid (0)
-            edges[(src, trg)] = np.random.choice([-1, 0, 1], p=[0.05, 0.9, 0.05])
+            edges[(src, trg)] = np.random.choice([-1, 0, 1], p=[0.35, 0., 0.65])
 
-    # randomize current activation state for TFs
-    # and then determine the state of targeted genes
-    for src in np.random.choice(list(Xgt.keys()), size=num_active_tfs, replace=False):
-        # either active (1) or inactive (0)
+    if not active_tfs:
+        # randomize current activation state for TFs
+        active_tfs = np.random.choice(list(Xgt.keys()), size=num_active_tfs, replace=False)
+
+    for src in active_tfs:
         Xgt[src] = 1
 
-    for src in Xgt.keys():
-        for trg in Y.keys():
-            edge = src, trg
-            if edge in edges.keys():
-                if edges[edge] < 0 and Xgt[src] > 0:
-                    # if TF is inhibitor, make sure the response is definitive
-                    Y[trg] += edges[edge]*Xgt[src]*10000
-                else:
-                    Y[trg] += edges[edge]*Xgt[src]
-
-    a = 0.005
-    b = 0.0005
+    # then determine the state of targeted genes
+    for edge, val in edges.items():
+        src, trg = edge
+        Y[trg] += val * Xgt[src]
+        edges[edge] = np.sign(val)
 
     # get only the signs for gene activation states
+    p = [[1.-a-b, a, b],
+         [a, 1.-a-a, a],
+         [b, a, 1.-a-b]]
+
     for trg in Y.keys():
         sgn = np.sign(Y[trg])
-        if sgn == -1:
-            Y[trg] = np.random.choice([-1, 0, 1], p=[1.-a-b, a, b])
-        if sgn == 0:
-            Y[trg] = np.random.choice([-1, 0, 1], p=[a, 1.-a-a, a])
-        if sgn == 1:
-            Y[trg] = np.random.choice([-1, 0, 1], p=[b, a, 1.-a-b])
-        
-    # generate more random non-applicable edges
-    # for src in Xgt.keys():
-        
-    #     # randomize the number of target genes for this TF
-    #     num_edges = int(np.random.exponential(len(Y)/5))
-    #     num_edges = min(num_edges, len(Y))
+        Y[trg] = np.random.choice([-1, 0, 1], p=p[sgn + 1])
 
-    #     # pick random genes
-    #     for trg in np.random.choice(list(Y.keys()), size=num_edges, replace=False):
-    #         try:
-    #             edges[(src, trg)] = edges[(src, trg)]
-    #         except KeyError:
-    #             edges[(src, trg)] = 0
-    
-    
     # this is the possible associations data
     rels = pd.DataFrame(list(edges.keys()), columns=['srcuid', 'trguid'])
-    rels = rels.assign(val=list(edges.values()))
+    rels = rels.assign(type=list(edges.values()))
 
     # extract a dataframe that only contains relevant interactions
     rels = rels[rels['trguid'].isin(Y.keys())]
-    rels = rels.assign(edge=[(src, trg) for src, trg in zip(rels['srcuid'], rels['trguid'])])
+    # rels = rels.assign(edge=[(src, trg) for src, trg in zip(rels['srcuid'], rels['trguid'])])
     rels = rels.assign(srcactive=[Xgt[src] for src in rels['srcuid']])
-    rels = rels.set_index('edge')
-    rels['type'] = 'conflict'
+    # rels = rels.set_index('edge')
 
-    ents = pd.DataFrame([num2words(i) for i in range(NX+NY)], columns=['name'])
+    ents = pd.DataFrame([f"{i:04d}" for i in range(NX+NY)], columns=['name'])
+    ents = ents.assign(type=['Protein']*NX + ['mRNA']*NY)
     ents.index.name = 'uid'
+    ents = ents.reset_index()
 
-    return Xgt, ents, rels, Y
+    evid = ents.loc[ents['type'] == 'mRNA'].copy().set_index('uid')
+    evid['foldchange'] = 0.
+    evid['pvalue'] = 1.
+    evid.loc[Y.keys(), 'val'] = list(Y.values())
+    evid.loc[evid.val != 0, 'pvalue'] = 0.
+    evid['foldchange'] = evid['val'].astype(float)
+    evid = evid.reset_index()
+
+    tests = get_tests(evid, rels)
+    tests['gt_act'] = tests.index.isin([k for k, a in Xgt.items() if a == 1])
+
+    return ents, rels, evid, tests
 
 def processTrace(model, Xgt=None, rels=None):
     
