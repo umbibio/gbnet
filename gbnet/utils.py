@@ -10,7 +10,7 @@ from gbnet import ModelORNOR
 def get_tests(evid, rels):
     evid = evid.reset_index().set_index('uid')
 
-    tmp = rels.merge(evid.loc[:, ['val']], how='outer', left_on='trguid', right_index=True)
+    tmp = rels.merge(evid.loc[:, ['val']], how='left', left_on='trguid', right_index=True)
 
     all_degp = len(evid.loc[evid.val == 1])    # number of positive deg
     all_degn = len(evid.loc[evid.val == -1])   # number of negative deg
@@ -130,6 +130,8 @@ def sample_model(model, ents, tests, max_its=100, burn_its=10, verbosity=0):
             print(f"[{datetime.now()}] {mgr=: 10.4f}. {gt_est=}, {max_val=:.6f}, {params=}", flush=True)
         if it >= max_its:
             break
+
+    print(f"Completed {it} iterations.")
 
     df = pd.DataFrame([dict(symbol=symbol, val=val) for _, symbol, idx, val in model.get_posterior_means('X') if idx == '1']).set_index('symbol')
     df['uid'] = ents.loc[ents.type == 'Protein'].set_index('name').loc[df.index.values, 'uid']
