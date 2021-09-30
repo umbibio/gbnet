@@ -40,12 +40,14 @@ namespace gbn
         
         // temp variable pointers to create and manipulate nodes
         XNode * X;
+        // TNode * T;
         HNodeORNOR * H;
         YDataNode * Y;
         SNode * S;
 
         // collections are a wrapper for a dictionary
         NodeDictionary x_dictionary = NodeDictionary();
+        // NodeDictionary t_dictionary = NodeDictionary();
         NodeDictionary h_dictionary = NodeDictionary();
 
         // One X for each TF
@@ -202,12 +204,35 @@ namespace gbn
             X->n_h_child++;
         }
 
+        // for (auto& dict_item: x_dictionary.dictionary) {
+        //     X = (XNode *) dict_item.second;
+        //     // double lognchild = log(X->n_h_child);
+
+        //     // t_alpha = t_lmargin + (n_zt_groups - lognchild - 1) * t_focus;
+        //     // t_beta = t_hmargin + lognchild * t_focus;
+        //     t_alpha = t_lmargin;
+        //     t_beta = t_hmargin + X->n_h_child * t_focus;
+
+        //     double t_mean = t_alpha / (t_alpha + t_beta);
+        //     T = new TNode(X->uid, t_alpha, t_beta, t_mean);
+        //     T->listen_children = noise_listen_children;
+
+        //     if (const_params) {
+        //         this->norand_nodes.push_back(T);
+        //     } else {
+        //         this->random_nodes.push_back(T);
+        //     }
+
+        //     t_dictionary.include_node(T);
+        // }
+
         ZNode * Z;
         // Nodes for interaction S nodes 
         for (auto edge: interaction_network) {
             tie(src_trg_pair, mor) = edge;
             tie(src, trg) = src_trg_pair;
             X = (XNode *) x_dictionary.find_node(src);
+            // T = (TNode *) t_dictionary.find_node(src);
             H = (HNodeORNOR *) h_dictionary.find_node(trg);
             std::string s_id = X->uid + "-->" + H->uid;
 

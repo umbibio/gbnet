@@ -96,7 +96,7 @@ def sample_model(model, ents, tests, max_its=100, burn_its=10, verbosity=0):
             df = pd.DataFrame([dict(symbol=symbol, val=val) for _, symbol, idx, val in model.get_posterior_means('X') if idx == '1']).set_index('symbol')
             gt_est = df.loc[gt_act_src_sym].val.values.round(2)
             max_val = df.val.max()
-            params = np.array([v[-1] for v in model.get_posterior_means('Z')] + [v[-1] for v in model.get_posterior_means('T')])
+            params = np.array([v[-1] for v in model.get_posterior_means('Z')])# + [v[-1] for v in model.get_posterior_means('T')])
             print(f"[{datetime.now()}] {mgr=: 10.4f}. {gt_est=}, {max_val=:.6f}, {params=}", flush=True)
 
     model.burn_stats()
@@ -126,14 +126,16 @@ def sample_model(model, ents, tests, max_its=100, burn_its=10, verbosity=0):
             df = pd.DataFrame([dict(symbol=symbol, val=val) for _, symbol, idx, val in model.get_posterior_means('X') if idx == '1']).set_index('symbol')
             gt_est = df.loc[gt_act_src_sym].val.values.round(2)
             max_val = df.val.max()
-            params = np.array([v[-1] for v in model.get_posterior_means('Z')] + [v[-1] for v in model.get_posterior_means('T')])
+            params = np.array([v[-1] for v in model.get_posterior_means('Z')])# + [v[-1] for v in model.get_posterior_means('T')])
             print(f"[{datetime.now()}] {mgr=: 10.4f}. {gt_est=}, {max_val=:.6f}, {params=}", flush=True)
         if it >= max_its:
             break
 
     print(f"Completed {it} iterations.")
-
-    df = pd.DataFrame([dict(symbol=symbol, val=val) for _, symbol, idx, val in model.get_posterior_means('X') if idx == '1']).set_index('symbol')
+    X = pd.DataFrame([dict(symbol=symbol, X=val) for _, symbol, idx, val in model.get_posterior_means('X') if idx == '1']).set_index('symbol')
+    # T = pd.DataFrame([dict(symbol=symbol, T=val) for _, symbol, idx, val in model.get_posterior_means('T') if idx == '0']).set_index('symbol')
+    # df = X.merge(T, left_index=True, right_index=True)
+    df = X
     df['uid'] = ents.loc[ents.type == 'Protein'].set_index('name').loc[df.index.values, 'uid']
 
-    return tests.merge(df.reset_index().set_index('uid'), left_index=True, right_index=True).sort_values('val', ascending=False)
+    return tests.merge(df.reset_index().set_index('uid'), left_index=True, right_index=True).sort_values('X', ascending=False)
