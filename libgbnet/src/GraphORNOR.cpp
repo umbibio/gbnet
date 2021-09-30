@@ -212,11 +212,11 @@ namespace gbn
             std::string s_id = X->uid + "-->" + H->uid;
 
             unsigned int mor_idx = (unsigned int) (mor + 1);
+            S = new SNode(s_id, this->SPROB[mor_idx], mor_idx);
+
             if (is_simulation) {
-                S = new SNode(s_id, &SPRIOR[mor_idx * 3], mor_idx);
                 this->norand_nodes.push_back(S);
             } else {
-                S = new SNode(s_id, &SPRIOR[mor_idx * 3], this->rng);
                 this->random_nodes.push_back(S);
             }
 
