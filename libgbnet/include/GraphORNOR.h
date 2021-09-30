@@ -38,7 +38,7 @@ namespace gbn
         protected:
         public:
             const double XPROB[2] = {0.99, 0.01};
-            const double XPROB_ACTIVE[2] = {0.10, 1.90};
+            const double XPROB_ACTIVE[2] = {0.10, 0.90};
             const double SPROB[3][3] = {{0.99, 0.01, 0.0},
                                         {0.005, 0.99, 0.005},
                                         {0.0, 0.01, 0.99}};
