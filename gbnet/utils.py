@@ -74,11 +74,12 @@ def get_model(
     z_alpha=198, z_beta=2, z0_alpha=198, z0_beta=2, t_alpha=2, t_beta=2,
     sprior = [[ 0.99, 0.01,   0.0],
               [0.005, 0.99, 0.005],
-              [  0.0, 0.01,  0.99]]
+              [  0.0, 0.01,  0.99]],
+    n_graphs=3
     ):
     
     return ModelORNOR(ents, rels, evid,
-                      n_graphs=3, sprior=sprior,
+                      n_graphs=n_graphs, sprior=sprior,
                       z_alpha=z_alpha, z_beta=z_beta, z0_alpha=z0_alpha, z0_beta=z0_beta, t_alpha=t_alpha, t_beta=t_beta,
                       t_focus=t_focus, t_lmargin=t_lmargin, t_hmargin=t_hmargin, zn_focus=zn_focus, zn_lmargin=zn_lmargin, zn_hmargin=zn_hmargin,
                       noise_listen_children=noise_listen_children, comp_yprob=comp_yprob, const_params=const_params)
@@ -96,8 +97,8 @@ def sample_model(model, ents, tests, max_its=100, burn_its=10, verbosity=0):
             df = pd.DataFrame([dict(symbol=symbol, val=val) for _, symbol, idx, val in model.get_posterior_means('X') if idx == '1']).set_index('symbol')
             gt_est = df.loc[gt_act_src_sym].val.values.round(2)
             max_val = df.val.max()
-            params = np.array([v[-1] for v in model.get_posterior_means('Z')] + [v[-1] for v in model.get_posterior_means('T')])
-            print(f"[{datetime.now()}] {mgr=: 10.4f}. {gt_est=}, {max_val=:.6f}, {params=}", flush=True)
+            # params = np.array([v[-1] for v in model.get_posterior_means('Z')] + [v[-1] for v in model.get_posterior_means('T')]).round(3)
+            print(f"[{datetime.now()}] {mgr=: 10.4f}. {gt_est=}, {max_val=:.6f}", flush=True)
 
     model.burn_stats()
 
@@ -126,8 +127,8 @@ def sample_model(model, ents, tests, max_its=100, burn_its=10, verbosity=0):
             df = pd.DataFrame([dict(symbol=symbol, val=val) for _, symbol, idx, val in model.get_posterior_means('X') if idx == '1']).set_index('symbol')
             gt_est = df.loc[gt_act_src_sym].val.values.round(2)
             max_val = df.val.max()
-            params = np.array([v[-1] for v in model.get_posterior_means('Z')] + [v[-1] for v in model.get_posterior_means('T')])
-            print(f"[{datetime.now()}] {mgr=: 10.4f}. {gt_est=}, {max_val=:.6f}, {params=}", flush=True)
+            # params = np.array([v[-1] for v in model.get_posterior_means('Z')] + [v[-1] for v in model.get_posterior_means('T')]).round(3)
+            print(f"[{datetime.now()}] {mgr=: 10.4f}. {gt_est=}, {max_val=:.6f}", flush=True)
         if it >= max_its:
             break
 
