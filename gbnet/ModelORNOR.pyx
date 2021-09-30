@@ -75,8 +75,8 @@ cdef class PyModelORNOR:
                          0.20, 0.40, 0.40]
         else:
             sprior = np.array(sprior)
-            assert sprior.shape == (3, 3)
-            assert (sprior.sum(axis=1) == 1).all()
+            assert sprior.shape == (3, 3), 'wrong shape for sprior'
+            assert (sprior.sum(axis=1) == 1).all(), 'bad sprior, rowsums != 1'
             sprior_py = sprior.flatten().tolist()
 
         cdef double[9] c_sprior = array.array('d', sprior_py)
