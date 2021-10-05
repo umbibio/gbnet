@@ -72,12 +72,14 @@ def get_model(
     const_params=False, noise_listen_children=False, comp_yprob=False,
     t_focus=2., t_lmargin=2., t_hmargin=2., zn_focus=2., zn_lmargin=8., zn_hmargin=2.,
     z_alpha=198, z_beta=2, z0_alpha=198, z0_beta=2, t_alpha=2, t_beta=2,
-    sprior = [[ 0.99, 0.01,   0.0],
-              [0.005, 0.99, 0.005],
-              [  0.0, 0.01,  0.99]],
+    s_leniency = 0.1,
     n_graphs=3
     ):
-    
+    assert s_leniency <= 0.5
+    sprior = [[1.0 - s_leniency, 0.9 * s_leniency, 0.1 * s_leniency],
+              [0.5 * s_leniency, 1.0 - s_leniency, 0.5 * s_leniency],
+              [0.1 * s_leniency, 0.9 * s_leniency, 1.0 - s_leniency]]
+
     return ModelORNOR(ents, rels, evid,
                       n_graphs=n_graphs, sprior=sprior,
                       z_alpha=z_alpha, z_beta=z_beta, z0_alpha=z0_alpha, z0_beta=z0_beta, t_alpha=t_alpha, t_beta=t_beta,
