@@ -133,9 +133,9 @@ def sample_model(model, ents, tests, max_its=100, burn_its=10, verbosity=0):
 
     print(f"Completed {it} iterations.")
     X = pd.DataFrame([dict(symbol=symbol, X=val) for _, symbol, idx, val in model.get_posterior_means('X') if idx == '1']).set_index('symbol')
-    # T = pd.DataFrame([dict(symbol=symbol, T=val) for _, symbol, idx, val in model.get_posterior_means('T') if idx == '0']).set_index('symbol')
-    # df = X.merge(T, left_index=True, right_index=True)
-    df = X
+    T = pd.DataFrame([dict(symbol=symbol, T=val) for _, symbol, idx, val in model.get_posterior_means('T') if idx == '0']).set_index('symbol')
+    df = X.merge(T, left_index=True, right_index=True)
+    # df = X
     df['uid'] = ents.loc[ents.type == 'Protein'].set_index('name').loc[df.index.values, 'uid']
 
     return tests.merge(df.reset_index().set_index('uid'), left_index=True, right_index=True).sort_values('X', ascending=False)
