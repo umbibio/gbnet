@@ -9,3 +9,4 @@ gbnet/*.so
 *.csv
 *.zip
 __pycache__
+*~*
