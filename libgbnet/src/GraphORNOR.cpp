@@ -1,4 +1,5 @@
 #include <math.h>
+#include <algorithm>
 
 #include "GraphORNOR.h"
 
@@ -168,7 +169,7 @@ namespace gbn
             this->random_nodes.push_back(ZY);
         }
 
-        const unsigned int n_zt_groups = 8;
+        const unsigned int n_zt_groups = 10;
 
         // ZN nodes
         // ZNode * ZNset[n_zt_groups];
@@ -210,7 +211,7 @@ namespace gbn
             X = (XNode *) dict_item.second;
             double lognchild = log(X->n_h_child);
 
-            t_alpha = t_lmargin + (n_zt_groups - lognchild - 1) * t_focus;
+            t_alpha = t_lmargin + std::max(n_zt_groups - lognchild - 1, 0.) * t_focus;
             t_beta = t_hmargin + lognchild * t_focus;
             // t_alpha = t_lmargin;
             // t_beta = t_hmargin + X->n_h_child * t_focus;

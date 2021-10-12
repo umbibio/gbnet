@@ -31,7 +31,7 @@ namespace gbn
         if (!(value < 0. || value > 1.))
             this->value = value;
         else
-            throw std::invalid_argument("Provided value is not valid");
+            throw std::invalid_argument(this->id + ": Provided value is not valid (" + std::to_string(value) + ")");
 
     }
 
