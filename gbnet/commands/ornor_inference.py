@@ -36,13 +36,7 @@ def main():
     del(params['ents'], params['rels'], params['evid'], params['out'])
 
     max_its = params['max_its']
-    l = params['s_leniency']
-    params['sprior'] = [
-        [1.0 - l, 0.9 * l, 0.1 * l],
-        [0.5 * l, 1.0 - l, 0.5 * l],
-        [0.1 * l, 0.9 * l, 1.0 - l],
-    ]
-    del(params['max_its'], params['s_leniency'])
+    del(params['max_its'])
 
     tests = get_tests(evid, rels)
     model = get_model(ents, rels, evid, **params)
