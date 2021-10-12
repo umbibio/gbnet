@@ -160,14 +160,17 @@ namespace gbn
         ZNode * ZN = new ZNode((std::string) "N", z0_alpha, z0_beta, z0_mean);
         ZN->listen_children = false;
 
-        if (const_params)
-        {
-            this->norand_nodes.push_back(ZN);
-            this->norand_nodes.push_back(ZY);
-        } else {
-            this->random_nodes.push_back(ZN);
-            this->random_nodes.push_back(ZY);
-        }
+        this->norand_nodes.push_back(ZN);
+        this->norand_nodes.push_back(ZY);
+
+        // if (const_params)
+        // {
+        //     this->norand_nodes.push_back(ZN);
+        //     this->norand_nodes.push_back(ZY);
+        // } else {
+        //     this->random_nodes.push_back(ZN);
+        //     this->random_nodes.push_back(ZY);
+        // }
 
         const unsigned int n_zt_groups = 10;
 
